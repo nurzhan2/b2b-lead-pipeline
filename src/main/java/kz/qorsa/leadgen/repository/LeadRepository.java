@@ -34,6 +34,25 @@ public interface LeadRepository extends JpaRepository<Lead, UUID> {
     @Query("select l from Lead l join fetch l.company order by l.score desc")
     List<Lead> findAllWithCompany();
 
+    /**
+     * HOT leads not yet pushed to the given outreach channel, hottest first.
+     *
+     * <p>Deliberately HOT only. Pushing 500 QUALIFIED leads into a one-seat
+     * CRM buries the handful worth calling, and a CRM full of rows nobody
+     * touches stops being used. A lead that climbs to HOT later gets picked
+     * up on the next run.
+     */
+    @Query("""
+            select l from Lead l
+            join fetch l.company c
+            where l.status = kz.qorsa.leadgen.domain.LeadStatus.HOT
+              and not exists (
+                select 1 from Outreach o where o.lead = l and o.channel = :channel
+              )
+            order by l.score desc, c.name asc
+            """)
+    List<Lead> findHotNotPushedTo(@Param("channel") String channel, Pageable pageable);
+
     /** How many leads currently sit at the given status - used by the rescore sweep's summary. */
     long countByStatus(LeadStatus status);
 

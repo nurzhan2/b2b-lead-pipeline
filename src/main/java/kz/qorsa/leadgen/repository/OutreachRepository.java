@@ -11,6 +11,14 @@ import org.springframework.data.repository.query.Param;
 public interface OutreachRepository extends JpaRepository<Outreach, UUID> {
 
     /**
+     * Has this lead already been pushed to the given channel? Used to keep
+     * workers/amocrm idempotent: a second run must not create a second deal
+     * for the same company, and a duplicate in a CRM is far more annoying to
+     * clean up than a missing row.
+     */
+    boolean existsByLeadIdAndChannel(UUID leadId, String channel);
+
+    /**
      * Deletes every outreach row belonging to a lead of a company from the
      * given source. Must run BEFORE the leads themselves are deleted -
      * outreach.lead_id is a NOT NULL foreign key (V1__init.sql) with no
