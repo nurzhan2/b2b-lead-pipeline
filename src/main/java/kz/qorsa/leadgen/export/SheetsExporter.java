@@ -45,6 +45,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,17 +82,35 @@ import org.springframework.stereotype.Service;
 public class SheetsExporter {
 
     private static final String APPLICATION_NAME = "qorsa-leadgen";
-    private static final int COLUMN_COUNT = 13;
+    private static final int COLUMN_COUNT = 14;
     // Fixed upper bound for banding/conditional-format ranges so they never
     // need to be recreated as the data grows or shrinks between syncs.
     private static final int MAX_FORMAT_ROWS = 10_000;
 
+    // "Контакт" sits right after the phone columns on purpose: it is read
+    // together with them. It holds a named human - the responsible official
+    // from a госзакупка notice, or the CEO from ЕГРЮЛ - which is what turns
+    // a 495 switchboard number into a call you can actually get through.
     private static final List<Object> HEADER = List.of(
-            "Дата", "Компания", "Ниша", "Телефон", "Тип телефона", "Email", "Мессенджер", "Город",
-            "Источник", "Score", "Статус", "Причина", "Ссылка");
+            "Дата", "Компания", "Ниша", "Телефон", "Тип телефона", "Контакт", "Email", "Мессенджер",
+            "Город", "Источник", "Score", "Статус", "Причина", "Ссылка");
 
     private static final DateTimeFormatter DATE_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneOffset.UTC);
+
+    // --- Site-audit tab -----------------------------------------------
+    // A separate tab rather than extra columns on the lead tabs, because it
+    // answers a different question. The lead tabs say "who to call"; this one
+    // says "what is wrong with their site", which is what the call actually
+    // opens with. It also lists companies whose site was measured and found
+    // fine - they score nothing and would be invisible everywhere else, but
+    // "checked, site is OK" and "never checked" are different facts and the
+    // difference matters when you're deciding whether to phone someone.
+    private static final String AUDIT_TAB = "🔍 Аудит сайтов";
+    private static final int AUDIT_COLUMN_COUNT = 12;
+    private static final List<Object> AUDIT_HEADER = List.of(
+            "Компания", "Сайт", "PageSpeed", "Провалов", "Что не так с сайтом",
+            "Телефон", "Email", "Город", "Источник", "Score", "Статус", "Проверен");
 
     private static final Color HEADER_BG = rgb(0.102, 0.102, 0.180);
     private static final Color WHITE = rgb(1, 1, 1);
@@ -157,6 +176,21 @@ public class SheetsExporter {
         tabs.put("🔥 Тёплые", leads.stream().filter(l -> isWarm(l.getStatus())).toList());
         tabs.put("❄️ Холодные", leads.stream().filter(l -> !isWarm(l.getStatus())).toList());
         tabs.put("📊 Все", leads);
+
+        // --- Call lists ---------------------------------------------------
+        // Three questions a caller actually asks, as three tabs. They overlap
+        // on purpose: a company with no site, a known director and a mobile
+        // number belongs on all of them, and that is the best lead this
+        // system produces.
+        tabs.put("🚫 Без сайта",
+                leads.stream().filter(l -> !l.getCompany().isHasSite()).toList());
+        // "Measured and bad", never "unmeasured" - a site nobody checked is
+        // not a site that needs work, and listing it would waste a call.
+        tabs.put("🔧 Сайт на доработку",
+                leads.stream().filter(SheetsExporter::siteNeedsWork).toList());
+        tabs.put("👤 Есть руководитель",
+                leads.stream().filter(l -> !contactPerson(l.getCompany()).isEmpty()).toList());
+
         for (Lead lead : leads) {
             tabs.computeIfAbsent(sourceLabel(lead.getCompany().getSource()), k -> new ArrayList<>()).add(lead);
         }
@@ -182,7 +216,32 @@ public class SheetsExporter {
             leadsExported += tabLeads.size();
         }
 
-        return new SyncResult(true, tabs.size(), leadsExported, "ok");
+        int tabCount = tabs.size() + writeAuditTab(leads, titleToSheetId);
+        return new SyncResult(true, tabCount, leadsExported, "ok");
+    }
+
+    /**
+     * Writes the site-audit tab, creating it on first sync. Returns 1 if it
+     * was written, 0 if nothing has been audited yet - an empty tab would be
+     * more confusing than no tab.
+     *
+     * <p>Its rows aren't counted in leadsExported: the same leads already
+     * appear on the lead tabs, and double-counting them would make the sync
+     * log read as if the export had grown.
+     */
+    private int writeAuditTab(List<Lead> leads, Map<String, Integer> titleToSheetId) throws IOException {
+        List<List<Object>> rows = buildAuditRows(leads);
+        if (rows.size() <= 1) {
+            return 0;
+        }
+
+        boolean isNew = !titleToSheetId.containsKey(AUDIT_TAB);
+        int sheetId = isNew
+                ? createSheets(List.of(AUDIT_TAB)).get(AUDIT_TAB)
+                : titleToSheetId.get(AUDIT_TAB);
+
+        writeRows(AUDIT_TAB, sheetId, rows, AUDIT_COLUMN_COUNT, isNew, false);
+        return 1;
     }
 
     private Map<String, Integer> createSheets(List<String> titles) throws IOException {
@@ -206,11 +265,23 @@ public class SheetsExporter {
     }
 
     private void writeSheet(String title, int sheetId, List<Lead> leads, boolean isNewSheet) throws IOException {
+        writeRows(title, sheetId, buildRows(leads), COLUMN_COUNT, isNewSheet, true);
+    }
+
+    /**
+     * Clears a tab and rewrites it. Column count is a parameter rather than a
+     * constant because the audit tab has its own shape; {@code leadFormatting}
+     * switches on the Score/Status conditional-format rules, which only make
+     * sense where those columns sit at their lead-tab indices.
+     */
+    private void writeRows(String title, int sheetId, List<List<Object>> rows, int columnCount,
+                           boolean isNewSheet, boolean leadFormatting) throws IOException {
         String spreadsheetId = properties.getSpreadsheetId();
-        List<List<Object>> rows = buildRows(leads);
+        String lastColumn = columnLetter(columnCount);
 
         sheetsService.spreadsheets().values()
-                .clear(spreadsheetId, quoted(title) + "!A1:M" + (MAX_FORMAT_ROWS + 1), new ClearValuesRequest())
+                .clear(spreadsheetId, quoted(title) + "!A1:" + lastColumn + (MAX_FORMAT_ROWS + 1),
+                        new ClearValuesRequest())
                 .execute();
 
         sheetsService.spreadsheets().values()
@@ -218,17 +289,23 @@ public class SheetsExporter {
                 .setValueInputOption("RAW")
                 .execute();
 
-        List<Request> formatting = buildFormattingRequests(sheetId, isNewSheet);
+        List<Request> formatting = buildFormattingRequests(sheetId, isNewSheet, columnCount, leadFormatting);
         sheetsService.spreadsheets()
                 .batchUpdate(spreadsheetId, new BatchUpdateSpreadsheetRequest().setRequests(formatting))
                 .execute();
     }
 
-    private List<Request> buildFormattingRequests(int sheetId, boolean isNewSheet) {
+    /** 1 -> "A", 12 -> "L", 13 -> "M". Only ever called with small counts. */
+    private static String columnLetter(int columnCount) {
+        return String.valueOf((char) ('A' + columnCount - 1));
+    }
+
+    private List<Request> buildFormattingRequests(int sheetId, boolean isNewSheet, int columnCount,
+                                                  boolean leadFormatting) {
         List<Request> requests = new ArrayList<>();
 
         requests.add(new Request().setRepeatCell(new RepeatCellRequest()
-                .setRange(fullWidthRange(sheetId, 0, 1))
+                .setRange(columnRange(sheetId, 0, columnCount, 0, 1))
                 .setCell(new CellData().setUserEnteredFormat(new CellFormat()
                         .setBackgroundColor(HEADER_BG)
                         .setTextFormat(new TextFormat().setBold(true).setForegroundColor(WHITE))))
@@ -240,40 +317,70 @@ public class SheetsExporter {
                 .setFields("gridProperties.frozenRowCount")));
 
         requests.add(new Request().setSetBasicFilter(new SetBasicFilterRequest()
-                .setFilter(new BasicFilter().setRange(fullWidthRange(sheetId, 0, MAX_FORMAT_ROWS)))));
+                .setFilter(new BasicFilter().setRange(
+                        columnRange(sheetId, 0, columnCount, 0, MAX_FORMAT_ROWS)))));
 
         requests.add(new Request().setAutoResizeDimensions(new AutoResizeDimensionsRequest()
                 .setDimensions(new DimensionRange().setSheetId(sheetId).setDimension("COLUMNS")
-                        .setStartIndex(0).setEndIndex(COLUMN_COUNT))));
+                        .setStartIndex(0).setEndIndex(columnCount))));
 
         if (isNewSheet) {
             requests.add(new Request().setAddBanding(new AddBandingRequest()
                     .setBandedRange(new BandedRange()
-                            .setRange(fullWidthRange(sheetId, 0, MAX_FORMAT_ROWS))
+                            .setRange(columnRange(sheetId, 0, columnCount, 0, MAX_FORMAT_ROWS))
                             .setRowProperties(new BandingProperties()
                                     .setHeaderColor(HEADER_BG)
                                     .setFirstBandColor(WHITE)
                                     .setSecondBandColor(BAND_GRAY)))));
 
-            requests.addAll(scoreConditionalFormatRules(sheetId));
-            requests.addAll(statusConditionalFormatRules(sheetId));
+            if (leadFormatting) {
+                requests.addAll(scoreConditionalFormatRules(sheetId));
+                requests.addAll(statusConditionalFormatRules(sheetId));
+            } else {
+                requests.addAll(auditConditionalFormatRules(sheetId));
+            }
         }
 
         return requests;
     }
 
-    // Score column (index 9, "J"): >=70 green, 40-69 yellow, <40 gray.
+    /**
+     * Audit tab colouring, on the two measured columns.
+     *
+     * <p>PageSpeed (index 2) is painted the way Google paints it, so a number
+     * here means the same thing it means on the PSI page: under 50 red, 50-89
+     * yellow, 90+ green. Failed checks (index 3) run the other way - more
+     * failures is a better lead, not a worse site to avoid - so 3+ is green.
+     * That inversion is deliberate and is why the two columns don't share a
+     * palette.
+     */
+    private List<Request> auditConditionalFormatRules(int sheetId) {
+        GridRange pagespeed = columnRange(sheetId, 2, 3);
+        GridRange fails = columnRange(sheetId, 3, 4);
+        return List.of(
+                addConditionalFormat(pagespeed, "NUMBER_LESS", List.of("50"), null, SCORE_GREEN),
+                addConditionalFormat(pagespeed, "NUMBER_BETWEEN", List.of("50", "89"), null, SCORE_YELLOW),
+                addConditionalFormat(pagespeed, "NUMBER_GREATER_THAN_EQ", List.of("90"), null, SCORE_GRAY),
+                addConditionalFormat(fails, "NUMBER_GREATER_THAN_EQ", List.of("3"), null, SCORE_GREEN),
+                addConditionalFormat(fails, "NUMBER_BETWEEN", List.of("1", "2"), null, SCORE_YELLOW),
+                addConditionalFormat(fails, "NUMBER_EQ", List.of("0"), null, SCORE_GRAY));
+    }
+
+    // Score column (index 10, "K"): >=70 green, 40-69 yellow, <40 gray.
+    // Index follows HEADER - it shifted by one when "Контакт" was inserted
+    // after "Тип телефона", and these rules must move with it or they paint
+    // the wrong column.
     private List<Request> scoreConditionalFormatRules(int sheetId) {
-        GridRange range = columnRange(sheetId, 9, 10);
+        GridRange range = columnRange(sheetId, 10, 11);
         return List.of(
                 addConditionalFormat(range, "NUMBER_GREATER_THAN_EQ", List.of("70"), null, SCORE_GREEN),
                 addConditionalFormat(range, "NUMBER_BETWEEN", List.of("40", "69"), null, SCORE_YELLOW),
                 addConditionalFormat(range, "NUMBER_LESS", List.of("40"), null, SCORE_GRAY));
     }
 
-    // Status column (index 10, "K"): HOT red+bold, QUALIFIED orange, NEW gray.
+    // Status column (index 11, "L"): HOT red+bold, QUALIFIED orange, NEW gray.
     private List<Request> statusConditionalFormatRules(int sheetId) {
-        GridRange range = columnRange(sheetId, 10, 11);
+        GridRange range = columnRange(sheetId, 11, 12);
         return List.of(
                 addConditionalFormat(range, "TEXT_EQ", List.of("HOT"), STATUS_RED, null),
                 addConditionalFormat(range, "TEXT_EQ", List.of("QUALIFIED"), STATUS_ORANGE, null),
@@ -317,6 +424,7 @@ public class SheetsExporter {
                     nullToEmpty(lead.getNiche()),
                     nullToEmpty(company.getPhone()),
                     phoneTypeLabel(company),
+                    contactPerson(company),
                     nullToEmpty(company.getEmail()),
                     nullToEmpty(company.getMessenger()),
                     nullToEmpty(company.getCity()),
@@ -327,6 +435,151 @@ public class SheetsExporter {
                     nullToEmpty(company.getSourceUrl())));
         }
         return rows;
+    }
+
+    /**
+     * Header + one row per AUDITED company, worst sites first.
+     *
+     * <p>Only companies workers/site_audit has actually measured appear here.
+     * A company that was never audited is left out entirely rather than shown
+     * with blanks - an empty row would read as "site is fine", which is the
+     * opposite of what an unmeasured site means.
+     *
+     * <p>Sorted by failure count then by PageSpeed ascending, so the top of
+     * the sheet is the call list: the worse the site, the better the lead.
+     * Package-visible for tests.
+     */
+    static List<List<Object>> buildAuditRows(List<Lead> leads) {
+        List<List<Object>> rows = new ArrayList<>();
+        rows.add(AUDIT_HEADER);
+
+        leads.stream()
+                .filter(lead -> auditAttempted(lead.getCompany()))
+                .sorted(Comparator
+                        .comparing((Lead lead) -> auditInt(lead.getCompany(), "auditFails"),
+                                Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(lead -> auditInt(lead.getCompany(), "pagespeed"),
+                                Comparator.nullsLast(Comparator.naturalOrder())))
+                .forEach(lead -> {
+                    Company company = lead.getCompany();
+                    rows.add(List.of(
+                            nullToEmpty(company.getName()),
+                            nullToEmpty(company.getDomain()),
+                            orEmpty(auditInt(company, "pagespeed")),
+                            orEmpty(auditInt(company, "auditFails")),
+                            failedChecks(company),
+                            nullToEmpty(company.getPhone()),
+                            nullToEmpty(company.getEmail()),
+                            nullToEmpty(company.getCity()),
+                            sourceLabel(company.getSource()),
+                            lead.getScore(),
+                            lead.getStatus().name(),
+                            auditedAt(company)));
+                });
+        return rows;
+    }
+
+    /**
+     * A named person to ask for, from whichever source knows one.
+     *
+     * <p>Two producers, checked in that order:
+     * {@code raw.contact_person} - the responsible official named on a
+     * госзакупка notice, which the customer is required by law to publish -
+     * and {@code raw.ceo_name}/{@code raw.ceo_post} from ЕГРЮЛ via
+     * workers/egrul. The procurement one wins when both exist: it names the
+     * person running THIS purchase, while the CEO is merely whoever signs.
+     *
+     * <p>The post is included when known ("Генеральный директор Иванов И.И.")
+     * because it tells a caller how to open, not just whom to name.
+     */
+    private static String contactPerson(Company company) {
+        if (company.getRaw() == null) {
+            return "";
+        }
+        Object responsible = company.getRaw().get("contact_person");
+        if (responsible != null && !String.valueOf(responsible).isBlank()) {
+            return String.valueOf(responsible).trim();
+        }
+
+        Object ceo = company.getRaw().get("ceo_name");
+        if (ceo == null || String.valueOf(ceo).isBlank()) {
+            return "";
+        }
+        Object post = company.getRaw().get("ceo_post");
+        return post == null || String.valueOf(post).isBlank()
+                ? String.valueOf(ceo).trim()
+                : String.valueOf(post).trim() + " " + String.valueOf(ceo).trim();
+    }
+
+    /**
+     * A site the studio could be paid to fix: measured, and bad enough to
+     * talk about. Either three or more failed checks, or a PageSpeed score
+     * Google itself paints red.
+     *
+     * <p>Unmeasured sites are excluded deliberately. "Nobody looked" is not
+     * "needs work", and a caller who opens with a complaint about a site that
+     * is actually fine has lost the call in the first sentence.
+     */
+    private static boolean siteNeedsWork(Lead lead) {
+        Company company = lead.getCompany();
+        Integer fails = auditInt(company, "auditFails");
+        if (fails != null && fails >= 3) {
+            return true;
+        }
+        Integer pagespeed = auditInt(company, "pagespeed");
+        return pagespeed != null && pagespeed < 50;
+    }
+
+    private static boolean auditAttempted(Company company) {
+        return company.getRaw() != null
+                && Boolean.TRUE.equals(company.getRaw().get("audit_attempted"));
+    }
+
+    private static Integer auditInt(Company company, String key) {
+        if (company.getRaw() == null) {
+            return null;
+        }
+        Object value = company.getRaw().get(key);
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        try {
+            return value == null ? null : Integer.valueOf(String.valueOf(value).trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /** Empty string rather than 0 - a site nobody could measure is not a zero. */
+    private static Object orEmpty(Integer value) {
+        return value == null ? "" : value;
+    }
+
+    /** raw.audit_failed_checks as a comma-separated list for the cell. */
+    private static String failedChecks(Company company) {
+        if (company.getRaw() == null) {
+            return "";
+        }
+        Object value = company.getRaw().get("audit_failed_checks");
+        if (value instanceof Collection<?> collection) {
+            return collection.stream().map(String::valueOf).collect(Collectors.joining(", "));
+        }
+        return value == null ? "" : String.valueOf(value);
+    }
+
+    private static String auditedAt(Company company) {
+        if (company.getRaw() == null) {
+            return "";
+        }
+        Object value = company.getRaw().get("audit_at");
+        if (value == null) {
+            return "";
+        }
+        try {
+            return DATE_FORMAT.format(Instant.parse(String.valueOf(value)));
+        } catch (RuntimeException e) {
+            return String.valueOf(value);
+        }
     }
 
     private static boolean isWarm(LeadStatus status) {
@@ -488,6 +741,13 @@ public class SheetsExporter {
     private static GridRange columnRange(int sheetId, int startCol, int endCol) {
         return new GridRange().setSheetId(sheetId)
                 .setStartRowIndex(1).setEndRowIndex(MAX_FORMAT_ROWS)
+                .setStartColumnIndex(startCol).setEndColumnIndex(endCol);
+    }
+
+    /** Explicit on both axes - the audit tab is narrower than the lead tabs. */
+    private static GridRange columnRange(int sheetId, int startCol, int endCol, int startRow, int endRow) {
+        return new GridRange().setSheetId(sheetId)
+                .setStartRowIndex(startRow).setEndRowIndex(endRow)
                 .setStartColumnIndex(startCol).setEndColumnIndex(endCol);
     }
 
