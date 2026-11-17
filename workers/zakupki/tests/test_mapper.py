@@ -112,12 +112,18 @@ def test_maps_a_fully_enriched_purchase():
         "law_type": "44-ФЗ",
         "customer_inn": "7704515009",
         "customer_phone": "7-495-9579977",
+        "contact_person": "Иванова Мария Петровна",
+        "customer_email": "zakupki@example.gov.ru",
     }
 
     lead = map_purchase_to_lead(purchase, keyword="разработка сайта")
 
     assert lead.name == "ДЕПАРТАМЕНТ ГОРОДА МОСКВЫ ПО КОНКУРЕНТНОЙ ПОЛИТИКЕ"
     assert lead.phone == "7-495-9579977"
+    # The notice names a responsible official and gives their work email.
+    # Both come off the public notice, and both are what turn a 495
+    # switchboard into someone you can ask for by name.
+    assert lead.email == "zakupki@example.gov.ru"
     assert lead.city == "Москва"
     assert lead.source == "ZAKUPKI"
     assert lead.source_url == purchase["detail_url"]
@@ -130,6 +136,7 @@ def test_maps_a_fully_enriched_purchase():
         "reg_number": "0173200001426001536",
         "deadline": "28.08.2026",
         "law_type": "44-ФЗ",
+        "contact_person": "Иванова Мария Петровна",
         "budgetMentioned": True,
     }
 

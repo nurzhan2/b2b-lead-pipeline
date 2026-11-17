@@ -225,9 +225,18 @@ _COMMON_TEXT_VALUE_CLASS = "common-text__value"
 #   44-FZ  "Объект закупки"                 223-FZ  "Наименование закупки"
 #   44-FZ  "Окончание подачи заявок"        223-FZ  "Дата и время окончания срока подачи заявок ..."
 #   44-FZ  "Номер контактного телефона"     223-FZ  "Контактный телефон"
+#   44-FZ  "Ответственное должностное лицо"  223-FZ  "Контактное лицо"
+#   44-FZ  "Адрес электронной почты"         223-FZ  "Адрес электронной почты"
 _223_SUBJECT_LABEL = "наименование закупки"
 _223_DEADLINE_LABEL = "окончания срока подачи"
 _223_PHONE_LABEL = "контактный телефон"
+# The notice names an actual person responsible for the purchase, with their
+# own work email. Without these two, a lead is an institution and the call
+# opens with "кто у вас занимается закупками"; with them you ask for someone
+# by name. Both are published on the public notice - this is not contact
+# scraping, it is the field the law requires the customer to fill in.
+_223_CONTACT_PERSON_LABEL = "контактное лицо"
+_223_EMAIL_LABEL = "адрес электронной почты"
 
 
 def _looks_like_223(soup, url: str | None) -> bool:
@@ -312,6 +321,12 @@ def _parse_223_card(soup, result: dict, url: str | None) -> dict:
         soup, lambda s: _common_text_field_by_label(s, _223_PHONE_LABEL), "customer_phone"
     )
     result["customer_inn"] = _safe_field(soup, _extract_223_customer_inn, "customer_inn")
+    result["contact_person"] = _safe_field(
+        soup, lambda s: _common_text_field_by_label(s, _223_CONTACT_PERSON_LABEL), "contact_person"
+    )
+    result["customer_email"] = _safe_field(
+        soup, lambda s: _common_text_field_by_label(s, _223_EMAIL_LABEL), "customer_email"
+    )
 
     law_type = _safe_field(soup, _extract_223_law_type, "law_type")
     if law_type is None and url and any(marker in url for marker in _223_URL_MARKERS):
@@ -345,6 +360,12 @@ def _parse_44_card(soup, result: dict) -> dict:
         soup, lambda s: _detail_field_by_label(s, "контактного телефона"), "customer_phone"
     )
     result["customer_inn"] = _safe_field(soup, lambda s: _detail_field_by_label(s, "инн заказчика"), "customer_inn")
+    result["contact_person"] = _safe_field(
+        soup, lambda s: _detail_field_by_label(s, "ответственное должностное лицо"), "contact_person"
+    )
+    result["customer_email"] = _safe_field(
+        soup, lambda s: _detail_field_by_label(s, "адрес электронной почты"), "customer_email"
+    )
     result["region"] = _safe_field(soup, lambda s: _detail_field_by_label(s, "регион"), "region")
     result["law_type"] = _safe_field(soup, _extract_law_type, "law_type")
 
@@ -381,6 +402,8 @@ def parse_purchase_card(html: str, url: str | None = None) -> dict:
         "law_type": None,
         "customer_phone": None,
         "customer_inn": None,
+        "contact_person": None,
+        "customer_email": None,
         "region": None,
     }
     if not html:

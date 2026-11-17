@@ -28,6 +28,8 @@ def merge_purchase_with_details(purchase: dict, details: dict | None) -> dict:
         merged["law_type"] = details.get("law_type")
         merged["customer_inn"] = details.get("customer_inn") or purchase.get("inn")
         merged["customer_phone"] = details.get("customer_phone")
+        merged["contact_person"] = details.get("contact_person")
+        merged["customer_email"] = details.get("customer_email")
         detail_budget = details.get("budget")
         merged["budget"] = detail_budget if detail_budget is not None else parse_money(purchase.get("price"))
     else:
@@ -36,6 +38,8 @@ def merge_purchase_with_details(purchase: dict, details: dict | None) -> dict:
         merged["law_type"] = None
         merged["customer_inn"] = purchase.get("inn")
         merged["customer_phone"] = None
+        merged["contact_person"] = None
+        merged["customer_email"] = None
 
     return merged
 
@@ -51,6 +55,13 @@ def map_purchase_to_lead(purchase: dict, keyword: str) -> RawCompanyRequest | No
         # информация" block, when the detail page had one - lets the
         # core's contact+geo (+10) and phone-type (PhoneUtil) rules fire.
         phone=purchase.get("customer_phone"),
+        # The notice's own "Контактная информация" block names the official
+        # responsible for this purchase and gives their work email. Both are
+        # published by law on a public notice - this is the field the
+        # customer is required to fill in, not scraped contact data. It
+        # turns the lead from an institution into a person you can ask for
+        # by name, which is what gets you past a 495 switchboard.
+        email=purchase.get("customer_email"),
         city=purchase.get("region"),
         source="ZAKUPKI",
         source_url=purchase.get("detail_url"),
@@ -68,6 +79,10 @@ def map_purchase_to_lead(purchase: dict, keyword: str) -> RawCompanyRequest | No
             "reg_number": purchase.get("reg_number"),
             "deadline": purchase.get("deadline"),
             "law_type": purchase.get("law_type"),
+            # ФИО ответственного должностного лица. Kept in raw rather than
+            # a column of its own so it can be shown wherever the sheet has
+            # room; SheetsExporter surfaces it as "Контактное лицо".
+            "contact_person": purchase.get("contact_person"),
             # The budget (НМЦК) is real and already approved - unlike a
             # casually mentioned figure in a chat message, this is exactly
             # what the core's budgetMentioned rule (+20) is meant to reward.

@@ -315,6 +315,8 @@ def test_all_fields_are_none_for_blank_or_empty_input():
             "law_type": None,
             "customer_phone": None,
             "customer_inn": None,
+            "contact_person": None,
+            "customer_email": None,
             "region": None,
         }
 
