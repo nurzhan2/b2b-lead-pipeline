@@ -3,6 +3,8 @@ no network. This is where the pieces meet: filter -> group -> details ->
 map -> send.
 """
 
+from datetime import datetime, timedelta, timezone
+
 import pytest
 
 from workers.hh.config import Area, Settings
@@ -56,6 +58,11 @@ def settings(**over):
                 stale_days=45, max_pages_per_query=1)
     base.update(over)
     return Settings(**base)
+
+
+def _days_ago(days: int) -> str:
+    """HH-style timestamp relative to today, so freshness never expires."""
+    return (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S+0000")
 
 
 def build(hh, core=None, cfg=None, keywords=None, areas=None):
@@ -302,7 +309,7 @@ async def test_statistics_report_stale_and_salary_counts():
     hh = FakeHh(default=[
         vacancy(vacancy_id="1", employer_id="1", published_at="2024-01-01T10:00:00+0300",
                 salary={"from": 100000, "to": None, "currency": "RUR"}),
-        vacancy(vacancy_id="2", employer_id="2", published_at="2026-08-29T10:00:00+0300",
+        vacancy(vacancy_id="2", employer_id="2", published_at=_days_ago(1),
                 salary=None),
     ])
 
