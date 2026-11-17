@@ -392,11 +392,122 @@ class PageContacts:
     phones: list[PhoneCandidate] = field(default_factory=list)
     messengers: list[Messenger] = field(default_factory=list)
     contact_links: list[str] = field(default_factory=list)
+    # Named leadership found on the page ("Генеральный директор Иванов И.И.").
+    people: list["PersonCandidate"] = field(default_factory=list)
     # (email, reason) for every address thrown away - for logs and tests.
     rejected_emails: list[tuple[str, str]] = field(default_factory=list)
 
 
 _INVISIBLE_TAGS = ["script", "style", "noscript", "template", "svg", "iframe", "object"]
+
+# --- Кто у них главный -------------------------------------------------
+# A site that names its director turns a switchboard number into a call you
+# can actually place: "позовите Ивана Петровича" gets through where
+# "позовите директора" does not.
+#
+# Only titles that mean "runs the company" are listed. Heads of departments
+# and managers are deliberately absent - a sales manager's name adds nothing
+# a caller couldn't get by asking, and collecting names of ordinary staff
+# from company sites is not what this worker is for.
+_LEADERSHIP_TITLES = (
+    "генеральный директор",
+    "исполнительный директор",
+    "управляющий партнер",
+    "управляющий партнёр",
+    "коммерческий директор",
+    "технический директор",
+    "директор",
+    "руководитель компании",
+    "руководитель студии",
+    "основатель",
+    "сооснователь",
+    "владелец",
+    "собственник",
+    "президент компании",
+)
+
+# ФИО in either order, with an optional patronymic, or initials:
+# "Иванов Иван Иванович", "Иван Иванов", "Иванов И.И.".
+_CAPITALIZED = r"[А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)?"
+_INITIALS = r"[А-ЯЁ]\.\s?[А-ЯЁ]\."
+_FIO = (
+    rf"(?:{_CAPITALIZED}\s+{_CAPITALIZED}(?:\s+{_CAPITALIZED})?"
+    rf"|{_CAPITALIZED}\s+{_INITIALS}"
+    rf"|{_INITIALS}\s+{_CAPITALIZED})"
+)
+_TITLE_ALTERNATION = "|".join(re.escape(title) for title in _LEADERSHIP_TITLES)
+
+# The title may come before the name ("Генеральный директор Иванов И.И.") or
+# after it ("Иванов Иван Иванович, генеральный директор"). Both are common.
+_PERSON_TITLE_FIRST = re.compile(
+    rf"(?P<title>{_TITLE_ALTERNATION})\s*[:\-–—,]?\s*(?P<name>{_FIO})",
+    re.IGNORECASE,
+)
+_PERSON_NAME_FIRST = re.compile(
+    rf"(?P<name>{_FIO})\s*[,\-–—]\s*(?P<title>{_TITLE_ALTERNATION})",
+    re.IGNORECASE,
+)
+
+# Words that look like a surname to the regex but never are. Without this,
+# "Директор департамента Москвы" yields a person named "Департамента Москвы".
+_NOT_A_NAME = frozenset({
+    "департамента", "отдела", "компании", "организации", "предприятия",
+    "филиала", "офиса", "москвы", "россии", "группы", "проекта", "студии",
+    "агентства", "центра", "сети", "по", "и", "или",
+})
+
+
+@dataclass(frozen=True)
+class PersonCandidate:
+    """A named person who appears to run the company, with their title."""
+
+    name: str
+    title: str
+    source_url: str
+
+
+def _looks_like_a_real_name(name: str) -> bool:
+    parts = [part for part in re.split(r"\s+", name.strip()) if part]
+    if not parts:
+        return False
+    return not any(part.lower().strip(".,") in _NOT_A_NAME for part in parts)
+
+
+def find_people(text: str, page_url: str) -> list[PersonCandidate]:
+    """Every "title + ФИО" pair in a page's visible text, first occurrence
+    wins per person. Order is preserved: the first match on a page is almost
+    always the most senior one."""
+    found: list[PersonCandidate] = []
+    seen: set[str] = set()
+
+    for pattern in (_PERSON_TITLE_FIRST, _PERSON_NAME_FIRST):
+        for match in pattern.finditer(text):
+            name = re.sub(r"\s+", " ", match.group("name")).strip()
+            title = re.sub(r"\s+", " ", match.group("title")).strip().lower()
+            if not _looks_like_a_real_name(name):
+                continue
+            key = name.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            found.append(PersonCandidate(name=name, title=title, source_url=page_url))
+
+    return found
+
+
+def pick_person(people: list[PersonCandidate]) -> PersonCandidate | None:
+    """The most senior person found. Ties break on page order, which tends to
+    put the top of the hierarchy first."""
+    if not people:
+        return None
+    ranked = sorted(
+        people,
+        key=lambda person: next(
+            (index for index, title in enumerate(_LEADERSHIP_TITLES) if title in person.title),
+            len(_LEADERSHIP_TITLES),
+        ),
+    )
+    return ranked[0]
 
 
 def extract_page(html: str, page_url: str, max_links: int = 3) -> PageContacts:
@@ -456,6 +567,8 @@ def extract_page(html: str, page_url: str, max_links: int = 3) -> PageContacts:
         add_email(match.group(1), "text")
     for match in _PHONE_IN_TEXT.finditer(text):
         add_phone(match.group(0), "text")
+
+    result.people = find_people(text, page_url)
 
     return result
 

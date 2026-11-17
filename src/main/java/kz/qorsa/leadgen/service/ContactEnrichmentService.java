@@ -47,6 +47,8 @@ public class ContactEnrichmentService {
     public static final String RAW_ENRICH_AT = "enrich_at";
     public static final String RAW_ENRICH_FILLED = "enrich_filled";
     public static final String RAW_ENRICH_NOTES = "enrich_notes";
+    /** Shared with the госзакупки worker and workers/egrul - one key, three producers. */
+    public static final String RAW_CONTACT_PERSON = "contact_person";
 
     public static final String FIELD_EMAIL = "email";
     public static final String FIELD_PHONE = "phone";
@@ -110,6 +112,12 @@ public class ContactEnrichmentService {
         raw.put(RAW_ENRICH_ATTEMPTED, true);
         raw.put(RAW_ENRICH_AT, Instant.now().toString());
         raw.put(RAW_ENRICH_FILLED, mergeFilled(raw.get(RAW_ENRICH_FILLED), filled));
+        // Never overwrite an existing name. A госзакупка notice names the
+        // official running that purchase, which beats whoever a website
+        // lists as director - and workers/egrul writes here too.
+        if (!isBlank(patch.getContactPerson()) && isBlank(asString(raw.get(RAW_CONTACT_PERSON)))) {
+            raw.put(RAW_CONTACT_PERSON, patch.getContactPerson().trim());
+        }
         if (!isBlank(patch.getEnrichNotes())) {
             raw.put(RAW_ENRICH_NOTES, patch.getEnrichNotes().trim());
         }
@@ -141,6 +149,10 @@ public class ContactEnrichmentService {
 
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private static String asString(Object value) {
+        return value == null ? null : String.valueOf(value);
     }
 
     /** {@code filled} = fields actually written by this call (empty when nothing new was applied). */

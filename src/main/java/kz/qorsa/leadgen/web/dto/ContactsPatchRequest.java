@@ -38,6 +38,15 @@ public class ContactsPatchRequest {
     @Size(max = 255)
     private String messenger;
 
+    /**
+     * Whoever runs the company, as the site names them ("Генеральный
+     * директор Иванов И.И.") - a person to ask for, not a contact channel.
+     * Stored in raw.contact_person, the same key a госзакупка notice fills,
+     * so the sheet reads one field regardless of where the name came from.
+     */
+    @Size(max = 200)
+    private String contactPerson;
+
     /** Human-readable provenance ("email с /contacts; телефон с главной"), stored in raw.enrich_notes. */
     @Size(max = 1000)
     private String enrichNotes;

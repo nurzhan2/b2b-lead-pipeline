@@ -17,9 +17,11 @@ from .extractor import (
     EmailCandidate,
     Messenger,
     PageContacts,
+    PersonCandidate,
     PhoneCandidate,
     extract_page,
     pick_messengers,
+    pick_person,
     rank_emails,
 )
 from .fetcher import BlockedHost, FetchError, Page, PoliteFetcher, RobotsDisallowed, SiteUnavailable
@@ -48,6 +50,9 @@ class EnrichOutcome:
     notes: str = ""
     pages_fetched: int = 0
     foreign_email: bool = False
+    #: "Генеральный директор Иванов И.И." when the site named someone who
+    #: runs the company. Not a contact - a name to ask for.
+    contact_person: str | None = None
 
     @property
     def found_anything(self) -> bool:
@@ -58,6 +63,7 @@ class EnrichOutcome:
             email=self.email,
             phone=self.phone,
             messenger=self.messenger,
+            contact_person=self.contact_person,
             enrich_notes=self.notes[:MAX_NOTES_LENGTH] or None,
         )
 
@@ -76,6 +82,7 @@ class _Collected:
         self.emails: list[EmailCandidate] = []
         self.phones: list[PhoneCandidate] = []
         self.messengers: list[Messenger] = []
+        self.people: list[PersonCandidate] = []
 
     def add(self, page: PageContacts) -> None:
         self.emails.extend(page.emails)  # rank_emails() dedups
@@ -83,6 +90,8 @@ class _Collected:
         self.phones.extend(p for p in page.phones if p.phone not in known_phones)
         known_messengers = {m.url for m in self.messengers}
         self.messengers.extend(m for m in page.messengers if m.url not in known_messengers)
+        known_people = {p.name.lower() for p in self.people}
+        self.people.extend(p for p in page.people if p.name.lower() not in known_people)
 
     def has_own_email(self, own_bases: set[str]) -> bool:
         return any(base_domain(c.email.rsplit("@", 1)[1]) in own_bases for c in self.emails)
@@ -181,6 +190,16 @@ class SiteEnricher:
         if not found:
             notes.insert(0, f"контакты не найдены (страниц просмотрено: {pages})")
 
+        # A named director is worth reporting even when no contact was found:
+        # the company already had a phone, and now there is someone to ask
+        # for on it. So this is gathered regardless of `needs`, and its
+        # presence never flips the outcome to FOUND - it isn't a contact.
+        person = pick_person(collected.people)
+        contact_person = None
+        if person is not None:
+            contact_person = f"{person.title.capitalize()} {person.name}"
+            notes.append(f"руководитель с {_where(person.source_url, site_host)}")
+
         return EnrichOutcome(
             status=FOUND if found else NOTHING_FOUND,
             email=best.email if best else None,
@@ -189,6 +208,7 @@ class SiteEnricher:
             notes="; ".join(notes),
             pages_fetched=pages,
             foreign_email=bool(best and best.is_foreign),
+            contact_person=contact_person,
         )
 
 

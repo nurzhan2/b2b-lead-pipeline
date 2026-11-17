@@ -43,6 +43,9 @@ class ContactsPatch(BaseModel):
     email: str | None = None
     phone: str | None = None
     messenger: str | None = None
+    # A person to ask for, not a contact channel. Filled when the site names
+    # whoever runs the company; the core stores it in raw.contact_person.
+    contact_person: str | None = Field(default=None, alias="contactPerson")
     enrich_notes: str | None = Field(default=None, alias="enrichNotes")
 
 
