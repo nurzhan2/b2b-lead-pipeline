@@ -1,0 +1,17 @@
+[project]
+name = "qorsa-leadgen-workers"
+version = "0.1.0"
+description = "Python collector workers for the qorsa_leadgen Spring Boot core"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["workers/hh_apply", "workers/instagram_cta"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["workers"]
+addopts = "-q"
