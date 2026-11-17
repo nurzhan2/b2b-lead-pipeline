@@ -95,4 +95,4 @@ for ($i = 1; $i -le $Cycles; $i++) {
 }
 
 Write-Log "=== цикл завершён ==="
-Write-Log "Сводка утром:  python scripts\export_excel.py --out C:\Users\user\Desktop\leads.xlsx"
+Write-Log "Сводка утром:  python scripts\export_excel.py --out leads.xlsx"

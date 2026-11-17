@@ -149,4 +149,4 @@ for ($i = 1; $i -le $Cycles; $i++) {
 }
 
 Write-Log "=== цикл завершён ==="
-Write-Log "Выгрузка: python scripts\export_calllist.py --out C:\Users\user\Desktop\calllist.xlsx"
+Write-Log "Выгрузка: python scripts\export_calllist.py --out calllist.xlsx"
