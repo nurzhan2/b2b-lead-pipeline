@@ -1,0 +1,19 @@
+# Where to look for CTA ad reels selling AI/IT products.
+#
+# hashtags: broad sweep, ~2 requests each, mostly noise - the CTA filter in
+#   discovery.py throws away the large majority. Keep the list short.
+# accounts: advertisers you already know run this pattern. Pull them from the
+#   Meta Ad Library (search the niche, note the advertiser handles) - one
+#   account here is worth about ten hashtags in yield per request.
+
+hashtags:
+  - ииагент
+  - нейросетидлябизнеса
+  - автоматизациябизнеса
+  - нейросотрудник
+  - чатботдлябизнеса
+  - aiагент
+
+accounts: []
+  # - some_ai_agency
+  # - another_advertiser

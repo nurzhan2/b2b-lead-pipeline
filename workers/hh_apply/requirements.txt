@@ -1,0 +1,10 @@
+# playwright — ТОЛЬКО здесь. Ни ядро, ни другие воркеры его не тянут
+# (проверяется tests/test_isolation.py). После установки один раз:
+#   python -m playwright install chromium
+playwright>=1.45,<2
+pydantic>=2.7,<3
+pydantic-settings>=2.3,<3
+PyYAML>=6.0,<7
+
+# test-only
+pytest>=8.0,<9
