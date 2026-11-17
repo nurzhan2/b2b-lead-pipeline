@@ -1,8 +1,8 @@
-# qorsa_leadgen
+# b2b-lead-pipeline
 
 B2B lead-generation pipeline for a small web/design studio: Python workers collect companies from public sources, a Java / Spring Boot core deduplicates and scores them in PostgreSQL, and hot leads go to Google Sheets and amoCRM.
 
-[![CI](https://github.com/nurzhan2/qorsa_leadgen/actions/workflows/ci.yml/badge.svg)](https://github.com/nurzhan2/qorsa_leadgen/actions/workflows/ci.yml) ![Java](https://img.shields.io/badge/java-21-orange) ![Python](https://img.shields.io/badge/python-3.11%2B-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+[![CI](https://github.com/nurzhan2/b2b-lead-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/nurzhan2/b2b-lead-pipeline/actions/workflows/ci.yml) ![Java](https://img.shields.io/badge/java-21-orange) ![Python](https://img.shields.io/badge/python-3.11%2B-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Problem
 
@@ -112,7 +112,7 @@ ruff check . && pytest
 
 - **Core:** 91 tests. Unit tests cover phone classification, normalization, dedup and scoring; integration tests run the ingest, enrichment and admin endpoints and the repository queries against PostgreSQL in Testcontainers.
 - **Workers:** 729 tests. Mappers, parsers (tender cards, contact pages, robots.txt), filters, dedup and runners driven by fake API and core clients instead of real HTTP calls.
-- CI runs both suites on every push: [GitHub Actions](https://github.com/nurzhan2/qorsa_leadgen/actions/workflows/ci.yml).
+- CI runs both suites on every push: [GitHub Actions](https://github.com/nurzhan2/b2b-lead-pipeline/actions/workflows/ci.yml).
 
 ## Project structure
 
