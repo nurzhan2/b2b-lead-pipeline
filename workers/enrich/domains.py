@@ -12,7 +12,8 @@ import socket
 
 _SCHEME_RE = re.compile(r"^[a-z][a-z0-9+.-]*://")
 _HOSTNAME_RE = re.compile(
-    r"(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,63}|xn--[a-z0-9-]{2,59})")
+    r"(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,63}|xn--[a-z0-9-]{2,59})"
+)
 
 # Second-level labels under which the registrable name sits one level deeper:
 # romashka.com.kz, romashka.msk.ru, romashka.co.uk.
@@ -21,22 +22,78 @@ _SECOND_LEVEL_LABELS = frozenset({"com", "net", "org", "co", "edu", "gov", "ac",
 # Platforms, not a company's own website. HH's site_url in particular is
 # often a VK/Instagram/taplink profile; after domain normalization that
 # becomes plain "vk.com", and crawling it would "find" VK's own contacts.
-PLATFORM_DOMAINS = frozenset({
-    # social networks, messengers, video
-    "vk.com", "vk.ru", "ok.ru", "facebook.com", "fb.com", "instagram.com", "t.me", "telegram.me",
-    "wa.me", "whatsapp.com", "youtube.com", "youtu.be", "tiktok.com", "twitter.com", "x.com",
-    "linkedin.com", "pinterest.com", "dzen.ru",
-    # link-in-bio pages
-    "taplink.cc", "taplink.ru", "linktr.ee", "hipolink.me", "mssg.me",
-    # search, maps, directories, job boards, marketplaces
-    "google.com", "goo.gl", "yandex.ru", "yandex.kz", "2gis.ru", "2gis.kz", "hh.ru", "hh.kz",
-    "headhunter.ru", "superjob.ru", "avito.ru", "ozon.ru", "wildberries.ru", "kaspi.kz", "satu.kz",
-    "olx.kz", "krisha.kz", "kolesa.kz", "flamp.ru", "zoon.ru", "yell.ru", "rusprofile.ru",
-    "list-org.com", "checko.ru", "sbis.ru", "profi.ru", "youdo.com", "prodoctorov.ru", "booking.com",
-})
+PLATFORM_DOMAINS = frozenset(
+    {
+        # social networks, messengers, video
+        "vk.com",
+        "vk.ru",
+        "ok.ru",
+        "facebook.com",
+        "fb.com",
+        "instagram.com",
+        "t.me",
+        "telegram.me",
+        "wa.me",
+        "whatsapp.com",
+        "youtube.com",
+        "youtu.be",
+        "tiktok.com",
+        "twitter.com",
+        "x.com",
+        "linkedin.com",
+        "pinterest.com",
+        "dzen.ru",
+        # link-in-bio pages
+        "taplink.cc",
+        "taplink.ru",
+        "linktr.ee",
+        "hipolink.me",
+        "mssg.me",
+        # search, maps, directories, job boards, marketplaces
+        "google.com",
+        "goo.gl",
+        "yandex.ru",
+        "yandex.kz",
+        "2gis.ru",
+        "2gis.kz",
+        "hh.ru",
+        "hh.kz",
+        "headhunter.ru",
+        "superjob.ru",
+        "avito.ru",
+        "ozon.ru",
+        "wildberries.ru",
+        "kaspi.kz",
+        "satu.kz",
+        "olx.kz",
+        "krisha.kz",
+        "kolesa.kz",
+        "flamp.ru",
+        "zoon.ru",
+        "yell.ru",
+        "rusprofile.ru",
+        "list-org.com",
+        "checko.ru",
+        "sbis.ru",
+        "profi.ru",
+        "youdo.com",
+        "prodoctorov.ru",
+        "booking.com",
+    }
+)
 
-_INTERNAL_SUFFIXES = (".localhost", ".local", ".internal", ".lan", ".home", ".corp", ".intranet",
-                      ".test", ".example", ".invalid")
+_INTERNAL_SUFFIXES = (
+    ".localhost",
+    ".local",
+    ".internal",
+    ".lan",
+    ".home",
+    ".corp",
+    ".intranet",
+    ".test",
+    ".example",
+    ".invalid",
+)
 
 
 def clean_domain(raw: str | None) -> str | None:

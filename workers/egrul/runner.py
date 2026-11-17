@@ -104,7 +104,9 @@ class EgrulRunner:
                     suggestions = await self._dadata.suggest_by_name(name, company.city)
                     counters["by_name"] = 1
                     candidate, note = pick_candidate(
-                        name, company.city, suggestions,
+                        name,
+                        company.city,
+                        suggestions,
                         min_similarity=self._settings.min_name_similarity,
                         active_only=self._settings.active_only,
                     )
@@ -132,10 +134,15 @@ class EgrulRunner:
             ok = await self._core.patch_egrul(company.id, patch)
             counters["patched" if ok else "patch_failed"] = 1
 
-            log.info("egrul.company_done", company_id=company.id, name=name,
-                     ceo=candidate.ceo_name if candidate else None,
-                     post=candidate.ceo_post if candidate else None,
-                     note=note, patched=ok)
+            log.info(
+                "egrul.company_done",
+                company_id=company.id,
+                name=name,
+                ceo=candidate.ceo_name if candidate else None,
+                post=candidate.ceo_post if candidate else None,
+                note=note,
+                patched=ok,
+            )
 
             if self._settings.request_delay_seconds:
                 await asyncio.sleep(self._settings.request_delay_seconds)

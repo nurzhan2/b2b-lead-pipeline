@@ -10,7 +10,7 @@ colder one.
 Pure date arithmetic - no network, no HH import.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import structlog
 
@@ -36,7 +36,7 @@ def parse_published_at(value) -> datetime | None:
     if parsed.tzinfo is None:
         # Undocumented but possible; assume UTC rather than crashing on an
         # offset-naive/aware comparison later.
-        return parsed.replace(tzinfo=timezone.utc)
+        return parsed.replace(tzinfo=UTC)
     return parsed
 
 
@@ -51,9 +51,9 @@ def age_days(published_at, now: datetime | None = None) -> int | None:
     published = parse_published_at(published_at)
     if published is None:
         return None
-    reference = now or datetime.now(timezone.utc)
+    reference = now or datetime.now(UTC)
     if reference.tzinfo is None:
-        reference = reference.replace(tzinfo=timezone.utc)
+        reference = reference.replace(tzinfo=UTC)
     return max(0, (reference - published).days)
 
 

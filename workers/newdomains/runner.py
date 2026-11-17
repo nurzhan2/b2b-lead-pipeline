@@ -45,7 +45,9 @@ class NewDomainsRunner:
                 continue
             self._dedup.mark(domain)
 
-            has_site = await check_has_site(domain, self._http_client, timeout=self._settings.site_check_timeout_seconds)
+            has_site = await check_has_site(
+                domain, self._http_client, timeout=self._settings.site_check_timeout_seconds
+            )
             lead = map_domain_to_lead(record, has_site)
             if lead is None:
                 continue

@@ -19,35 +19,41 @@ def load_fixture(name: str) -> str:
 # Route values are factories (request -> Response), so a route can be hit
 # more than once - an httpx.Response body can only be read once.
 
+
 def html(body: str, status: int = 200, charset: str = "utf-8"):
     encoded = body.encode(charset)
 
     def respond(request):
         return httpx.Response(status, headers={"content-type": f"text/html; charset={charset}"}, content=encoded)
+
     return respond
 
 
 def text(body: str, status: int = 200):
     def respond(request):
         return httpx.Response(status, headers={"content-type": "text/plain"}, content=body.encode("utf-8"))
+
     return respond
 
 
 def raw(status: int, content_type: str, content: bytes):
     def respond(request):
         return httpx.Response(status, headers={"content-type": content_type}, content=content)
+
     return respond
 
 
 def redirect(location: str, status: int = 301):
     def respond(request):
         return httpx.Response(status, headers={"location": location})
+
     return respond
 
 
 def fail(exc_type=httpx.ConnectError, message: str = "connection refused"):
     def respond(request):
         raise exc_type(message, request=request)
+
     return respond
 
 
@@ -91,7 +97,8 @@ async def static_guard(host: str) -> str | None:
 
 def make_fetcher(web: FakeWeb, **overrides):
     client = httpx.AsyncClient(transport=httpx.MockTransport(web.handler))
-    options = dict(user_agent=UA, request_delay_seconds=0.0, host_guard=allow_every_host,
-                   sleep=NoSleep(), clock=lambda: 0.0)
+    options = dict(
+        user_agent=UA, request_delay_seconds=0.0, host_guard=allow_every_host, sleep=NoSleep(), clock=lambda: 0.0
+    )
     options.update(overrides)
     return client, PoliteFetcher(client, **options)

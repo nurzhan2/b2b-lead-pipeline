@@ -14,10 +14,19 @@ from workers.osm.config import Settings
 
 @pytest.fixture
 def chains() -> ChainFilter:
-    return ChainFilter([
-        "Пятёрочка", "Магнит", "Сбербанк", "Ozon", "McDonalds",
-        "Красное и Белое", "H&M", "М.Видео", "Fix Price",
-    ])
+    return ChainFilter(
+        [
+            "Пятёрочка",
+            "Магнит",
+            "Сбербанк",
+            "Ozon",
+            "McDonalds",
+            "Красное и Белое",
+            "H&M",
+            "М.Видео",
+            "Fix Price",
+        ]
+    )
 
 
 # --- normalize_name -------------------------------------------------------
@@ -44,17 +53,20 @@ def test_normalize_handles_none_and_blank():
 # --- chains are filtered --------------------------------------------------
 
 
-@pytest.mark.parametrize("name", [
-    "Пятёрочка",
-    "Пятерочка",                 # ё/е variant
-    "ПЯТЁРОЧКА",                 # case
-    "Магазин Пятёрочка №123",    # embedded
-    "Магнит",
-    "Сбербанк",
-    "Ozon",
-    "OZON",
-    "McDonalds",
-])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Пятёрочка",
+        "Пятерочка",  # ё/е variant
+        "ПЯТЁРОЧКА",  # case
+        "Магазин Пятёрочка №123",  # embedded
+        "Магнит",
+        "Сбербанк",
+        "Ozon",
+        "OZON",
+        "McDonalds",
+    ],
+)
 def test_known_chains_are_filtered(chains: ChainFilter, name):
     assert chains.is_chain(name) is True
 
@@ -80,16 +92,19 @@ def test_matched_chain_reports_which_entry_fired(chains: ChainFilter):
 # --- independents are NOT filtered (the important half) -------------------
 
 
-@pytest.mark.parametrize("name", [
-    "Магнитогорская аптека",     # "Магнит" is a PREFIX, not a word
-    "Магнитка",
-    "Кафе у метро",              # "Метро" deliberately absent from the list
-    "Салон красоты Верный стиль",
-    "Пекарня Хлебница",
-    "Автосервис на Ленина",
-    "Стоматология Улыбка",
-    "ООО Озонотерапия",          # contains "озон" but is not Ozon
-])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Магнитогорская аптека",  # "Магнит" is a PREFIX, not a word
+        "Магнитка",
+        "Кафе у метро",  # "Метро" deliberately absent from the list
+        "Салон красоты Верный стиль",
+        "Пекарня Хлебница",
+        "Автосервис на Ленина",
+        "Стоматология Улыбка",
+        "ООО Озонотерапия",  # contains "озон" but is not Ozon
+    ],
+)
 def test_independent_businesses_are_not_filtered(chains: ChainFilter, name):
     assert chains.is_chain(name) is False, f"over-filtered a real lead: {name}"
 
@@ -149,9 +164,14 @@ def test_shipped_stoplist_does_not_filter_ordinary_businesses():
     filt = ChainFilter(Settings().stoplist)
 
     for name in [
-        "Кафе Уют", "Стоматология Дента", "Автосервис Гараж 47",
-        "Пекарня у дома", "Магнитогорская аптека", "Цветы 24 часа",
-        "Салон красоты Ирина", "Шиномонтаж на Мира",
+        "Кафе Уют",
+        "Стоматология Дента",
+        "Автосервис Гараж 47",
+        "Пекарня у дома",
+        "Магнитогорская аптека",
+        "Цветы 24 часа",
+        "Салон красоты Ирина",
+        "Шиномонтаж на Мира",
     ]:
         assert filt.is_chain(name) is False, f"shipped list over-filters: {name}"
 

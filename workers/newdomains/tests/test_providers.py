@@ -74,11 +74,14 @@ def test_provider_name_is_case_insensitive():
 @pytest.mark.asyncio
 async def test_whoisxml_provider_parses_new_registered_domains_key():
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json={
-            "newRegisteredDomains": [
-                {"domainName": "freshbiz.ru", "date": "2026-08-20", "registrarName": "REG.RU"},
-            ],
-        })
+        return httpx.Response(
+            200,
+            json={
+                "newRegisteredDomains": [
+                    {"domainName": "freshbiz.ru", "date": "2026-08-20", "registrarName": "REG.RU"},
+                ],
+            },
+        )
 
     transport = httpx.MockTransport(handler)
     async with httpx.AsyncClient(transport=transport) as client:

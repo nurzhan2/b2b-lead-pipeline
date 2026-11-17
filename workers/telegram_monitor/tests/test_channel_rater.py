@@ -190,10 +190,12 @@ async def test_rate_all_rates_every_resolved_channel(settings: Settings, matcher
     )
     rater = ChannelRater(settings, matcher, client)
 
-    ratings = await rater.rate_all([
-        _resolved(-1001, "orders_channel"),
-        _resolved(-1002, "empty_channel"),
-    ])
+    ratings = await rater.rate_all(
+        [
+            _resolved(-1001, "orders_channel"),
+            _resolved(-1002, "empty_channel"),
+        ]
+    )
 
     assert [r.identifier for r in ratings] == ["orders_channel", "empty_channel"]
     assert ratings[0].verdict == "ДЕРЖАТЬ"

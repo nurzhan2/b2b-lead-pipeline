@@ -25,8 +25,15 @@ BATCH_SIZE = 50
 
 
 class HhRunner:
-    def __init__(self, settings, keywords: list[str], areas: list, client: HhClient,
-                 core: CoreClient, employer_filter: EmployerFilter | None = None):
+    def __init__(
+        self,
+        settings,
+        keywords: list[str],
+        areas: list,
+        client: HhClient,
+        core: CoreClient,
+        employer_filter: EmployerFilter | None = None,
+    ):
         self._settings = settings
         self._keywords = keywords
         self._areas = areas
@@ -64,8 +71,7 @@ class HhRunner:
         for keyword in self._keywords:
             for area in self._areas:
                 try:
-                    vacancies = await self._client.iter_vacancies(
-                        keyword, area.id, self._settings.max_pages_per_query)
+                    vacancies = await self._client.iter_vacancies(keyword, area.id, self._settings.max_pages_per_query)
                 except HhAuthError as exc:
                     # Every subsequent request would fail identically, so
                     # stop rather than burning through the whole grid.
@@ -83,8 +89,7 @@ class HhRunner:
                     )
                     if reason is not None:
                         stats[_stat_key(reason[0])] += 1
-                        log.debug("hh.employer_skipped", name=employer.get("name"),
-                                  reason=reason[0], detail=reason[1])
+                        log.debug("hh.employer_skipped", name=employer.get("name"), reason=reason[0], detail=reason[1])
                         continue
 
                     age = age_days(vacancy.get("published_at"))
@@ -96,8 +101,13 @@ class HhRunner:
                         keyword=keyword,
                     )
 
-                log.info("hh.query_done", keyword=keyword, area=area.name,
-                         vacancies=len(vacancies), employers_so_far=len(aggregator))
+                log.info(
+                    "hh.query_done",
+                    keyword=keyword,
+                    area=area.name,
+                    vacancies=len(vacancies),
+                    employers_so_far=len(aggregator),
+                )
             if aborted:
                 break
 
@@ -114,8 +124,10 @@ class HhRunner:
                 break
 
             details = None
-            if (self._settings.fetch_employer_details
-                    and stats["employer_details_fetched"] < self._settings.max_employer_details):
+            if (
+                self._settings.fetch_employer_details
+                and stats["employer_details_fetched"] < self._settings.max_employer_details
+            ):
                 try:
                     details = await self._client.fetch_employer(bucket.employer_id)
                 except HhAuthError as exc:
@@ -135,8 +147,9 @@ class HhRunner:
                 )
                 if reason is not None:
                     stats[_stat_key(reason[0])] += 1
-                    log.debug("hh.employer_skipped_late", employer_id=bucket.employer_id,
-                              reason=reason[0], detail=reason[1])
+                    log.debug(
+                        "hh.employer_skipped_late", employer_id=bucket.employer_id, reason=reason[0], detail=reason[1]
+                    )
                     continue
 
             lead = map_employer_to_lead(bucket, stale_days=stale_days, employer_details=details)

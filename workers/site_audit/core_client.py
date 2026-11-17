@@ -56,8 +56,14 @@ class CoreClient:
     backoff; 4xx (bad request, unknown id) are not retried. PATCH is safe to
     retry: a measurement simply overwrites itself."""
 
-    def __init__(self, base_url: str, client: httpx.AsyncClient | None = None,
-                 retry_attempts: int = 3, retry_base_seconds: float = 1.0, retry_max_seconds: float = 10.0):
+    def __init__(
+        self,
+        base_url: str,
+        client: httpx.AsyncClient | None = None,
+        retry_attempts: int = 3,
+        retry_base_seconds: float = 1.0,
+        retry_max_seconds: float = 10.0,
+    ):
         self._base_url = base_url.rstrip("/")
         self._client = client or httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS)
         self._owns_client = client is None
@@ -86,8 +92,9 @@ class CoreClient:
             log.error("core.patch_failed", company_id=company_id, error=str(exc))
             return False
         if response.status_code >= 400:
-            log.error("core.patch_rejected", company_id=company_id, status=response.status_code,
-                      body=response.text[:300])
+            log.error(
+                "core.patch_rejected", company_id=company_id, status=response.status_code, body=response.text[:300]
+            )
             return False
         return True
 

@@ -9,48 +9,58 @@ import pytest
 from workers.enrich.domains import base_domain, clean_domain, platform_of, resolve_guard, static_block_reason
 
 
-@pytest.mark.parametrize("raw, expected", [
-    ("romashka.kz", "romashka.kz"),
-    ("  Romashka.KZ  ", "romashka.kz"),
-    ("https://www.romashka.kz/about?utm=hh", "www.romashka.kz"),
-    ("romashka.kz:8080", "romashka.kz"),
-    ("romashka.kz.", "romashka.kz"),
-    ("ромашка.рф", "xn--80aa3agjl3d.xn--p1ai"),  # Cyrillic domains are fetched as punycode
-    ("192.168.1.10", None),
-    ("localhost", None),
-    ("не домен", None),
-    ("", None),
-    (None, None),
-])
+@pytest.mark.parametrize(
+    "raw, expected",
+    [
+        ("romashka.kz", "romashka.kz"),
+        ("  Romashka.KZ  ", "romashka.kz"),
+        ("https://www.romashka.kz/about?utm=hh", "www.romashka.kz"),
+        ("romashka.kz:8080", "romashka.kz"),
+        ("romashka.kz.", "romashka.kz"),
+        ("ромашка.рф", "xn--80aa3agjl3d.xn--p1ai"),  # Cyrillic domains are fetched as punycode
+        ("192.168.1.10", None),
+        ("localhost", None),
+        ("не домен", None),
+        ("", None),
+        (None, None),
+    ],
+)
 def test_clean_domain(raw, expected):
     assert clean_domain(raw) == expected
 
 
-@pytest.mark.parametrize("host, expected", [
-    ("romashka.kz", "romashka.kz"),
-    ("www.romashka.kz", "romashka.kz"),
-    ("shop.romashka.kz", "romashka.kz"),
-    ("romashka.com.kz", "romashka.com.kz"),
-    ("shop.romashka.com.kz", "romashka.com.kz"),
-    ("romashka.msk.ru", "romashka.msk.ru"),
-])
+@pytest.mark.parametrize(
+    "host, expected",
+    [
+        ("romashka.kz", "romashka.kz"),
+        ("www.romashka.kz", "romashka.kz"),
+        ("shop.romashka.kz", "romashka.kz"),
+        ("romashka.com.kz", "romashka.com.kz"),
+        ("shop.romashka.com.kz", "romashka.com.kz"),
+        ("romashka.msk.ru", "romashka.msk.ru"),
+    ],
+)
 def test_base_domain(host, expected):
     assert base_domain(host) == expected
 
 
-@pytest.mark.parametrize("host, expected", [
-    ("vk.com", "vk.com"),
-    ("m.vk.com", "vk.com"),
-    ("taplink.cc", "taplink.cc"),
-    ("romashka.kz", None),
-    ("romashka.tilda.ws", None),  # a site-builder subdomain IS the company's site
-])
+@pytest.mark.parametrize(
+    "host, expected",
+    [
+        ("vk.com", "vk.com"),
+        ("m.vk.com", "vk.com"),
+        ("taplink.cc", "taplink.cc"),
+        ("romashka.kz", None),
+        ("romashka.tilda.ws", None),  # a site-builder subdomain IS the company's site
+    ],
+)
 def test_platform_of(host, expected):
     assert platform_of(host) == expected
 
 
-@pytest.mark.parametrize("host", ["127.0.0.1", "10.0.0.5", "[::1]", "localhost", "intranet",
-                                  "printer.local", "db.internal", "romashka.test"])
+@pytest.mark.parametrize(
+    "host", ["127.0.0.1", "10.0.0.5", "[::1]", "localhost", "intranet", "printer.local", "db.internal", "romashka.test"]
+)
 def test_static_block_reason_refuses_internal_hosts(host):
     assert static_block_reason(host) is not None
 

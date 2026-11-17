@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     stale_days: int = 45
 
     # --- Paging / rate limiting ---
-    per_page: int = 100          # HH's documented maximum
+    per_page: int = 100  # HH's documented maximum
     max_pages_per_query: int = 5  # per (keyword, area) pair
     request_delay_seconds: float = 1.0
     request_timeout_seconds: float = 30.0

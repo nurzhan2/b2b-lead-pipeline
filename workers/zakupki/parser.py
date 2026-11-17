@@ -311,12 +311,8 @@ def _extract_223_customer_inn(soup) -> str | None:
 
 
 def _parse_223_card(soup, result: dict, url: str | None) -> dict:
-    result["subject"] = _safe_field(
-        soup, lambda s: _common_text_field_by_label(s, _223_SUBJECT_LABEL), "subject"
-    )
-    result["deadline"] = _safe_field(
-        soup, lambda s: _common_text_field_by_label(s, _223_DEADLINE_LABEL), "deadline"
-    )
+    result["subject"] = _safe_field(soup, lambda s: _common_text_field_by_label(s, _223_SUBJECT_LABEL), "subject")
+    result["deadline"] = _safe_field(soup, lambda s: _common_text_field_by_label(s, _223_DEADLINE_LABEL), "deadline")
     result["customer_phone"] = _safe_field(
         soup, lambda s: _common_text_field_by_label(s, _223_PHONE_LABEL), "customer_phone"
     )
@@ -353,9 +349,7 @@ def _parse_223_card(soup, result: dict, url: str | None) -> dict:
 
 def _parse_44_card(soup, result: dict) -> dict:
     result["subject"] = _safe_field(soup, lambda s: _detail_field_by_label(s, "объект закупки"), "subject")
-    result["deadline"] = _safe_field(
-        soup, lambda s: _detail_field_by_label(s, "окончание подачи"), "deadline"
-    )
+    result["deadline"] = _safe_field(soup, lambda s: _detail_field_by_label(s, "окончание подачи"), "deadline")
     result["customer_phone"] = _safe_field(
         soup, lambda s: _detail_field_by_label(s, "контактного телефона"), "customer_phone"
     )

@@ -50,7 +50,6 @@ class CoreClient:
             log.error("core.mark_failed", lead_id=lead_id, error=str(exc))
             return False
         if response.status_code >= 400:
-            log.error("core.mark_rejected", lead_id=lead_id, status=response.status_code,
-                      body=response.text[:300])
+            log.error("core.mark_rejected", lead_id=lead_id, status=response.status_code, body=response.text[:300])
             return False
         return True

@@ -29,8 +29,9 @@ from .domains import base_domain
 _META_CHARSET_RE = re.compile(rb"""<meta[^>]+charset\s*=\s*["']?\s*([A-Za-z0-9_.:-]+)""", re.IGNORECASE)
 # Server defaults that are routinely wrong for Cyrillic pages (Apache's
 # ISO-8859-1 in particular) - the page's own <meta> is trusted over these.
-_UNTRUSTED_HEADER_CHARSETS = frozenset({"iso-8859-1", "latin-1", "latin1", "windows-1252", "cp1252",
-                                        "us-ascii", "ascii"})
+_UNTRUSTED_HEADER_CHARSETS = frozenset(
+    {"iso-8859-1", "latin-1", "latin1", "windows-1252", "cp1252", "us-ascii", "ascii"}
+)
 
 
 def decode_html(body: bytes, declared_charset: str | None = None) -> str:
@@ -58,71 +59,208 @@ def decode_html(body: bytes, declared_charset: str | None = None) -> str:
 
 # ---------------------------------------------------------------- emails
 
-_EMAIL_CORE = (r"[a-z0-9][a-z0-9._%+-]{0,63}@"
-               r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,24}|xn--[a-z0-9-]{2,59})")
+_EMAIL_CORE = (
+    r"[a-z0-9][a-z0-9._%+-]{0,63}@"
+    r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,24}|xn--[a-z0-9-]{2,59})"
+)
 _EMAIL_IN_TEXT = re.compile(r"(?<![a-z0-9._%+-])(" + _EMAIL_CORE + r")(?![a-z0-9-])", re.IGNORECASE)
 _EMAIL_EXACT = re.compile(_EMAIL_CORE, re.IGNORECASE)
 
 # "logo@2x.png": a retina asset name that happens to be email-shaped.
-_ASSET_EXTENSIONS = frozenset({
-    "png", "jpg", "jpeg", "gif", "svg", "webp", "avif", "ico", "bmp", "tif", "tiff",
-    "css", "js", "mjs", "map", "json", "woff", "woff2", "ttf", "eot", "otf",
-    "mp4", "webm", "mp3", "pdf", "php", "html", "htm", "xml", "txt",
-})
-_NOREPLY_LOCALS = frozenset({
-    "noreply", "no-reply", "no_reply", "donotreply", "do-not-reply", "do_not_reply",
-    "mailer-daemon", "bounce", "bounces", "postmaster", "hostmaster", "abuse",
-})
+_ASSET_EXTENSIONS = frozenset(
+    {
+        "png",
+        "jpg",
+        "jpeg",
+        "gif",
+        "svg",
+        "webp",
+        "avif",
+        "ico",
+        "bmp",
+        "tif",
+        "tiff",
+        "css",
+        "js",
+        "mjs",
+        "map",
+        "json",
+        "woff",
+        "woff2",
+        "ttf",
+        "eot",
+        "otf",
+        "mp4",
+        "webm",
+        "mp3",
+        "pdf",
+        "php",
+        "html",
+        "htm",
+        "xml",
+        "txt",
+    }
+)
+_NOREPLY_LOCALS = frozenset(
+    {
+        "noreply",
+        "no-reply",
+        "no_reply",
+        "donotreply",
+        "do-not-reply",
+        "do_not_reply",
+        "mailer-daemon",
+        "bounce",
+        "bounces",
+        "postmaster",
+        "hostmaster",
+        "abuse",
+    }
+)
 _NOREPLY_PREFIXES = ("noreply", "no-reply", "no_reply", "donotreply", "do-not-reply")
-_PLACEHOLDER_LOCALS = frozenset({
-    "example", "test", "testing", "user", "username", "yourname", "your", "youremail",
-    "your.email", "yourmail", "name", "sample", "xxx", "xxxx",
-})
-_PLACEHOLDER_DOMAINS = frozenset({
-    "example.com", "example.org", "example.net", "example.ru", "example.kz", "test.com", "test.ru",
-    "domain.com", "domain.ru", "domain.kz", "yourdomain.com", "yoursite.com", "mysite.ru",
-    "site.ru", "site.com", "sait.ru", "vashsait.ru", "company.com", "email.com",
-})
+_PLACEHOLDER_LOCALS = frozenset(
+    {
+        "example",
+        "test",
+        "testing",
+        "user",
+        "username",
+        "yourname",
+        "your",
+        "youremail",
+        "your.email",
+        "yourmail",
+        "name",
+        "sample",
+        "xxx",
+        "xxxx",
+    }
+)
+_PLACEHOLDER_DOMAINS = frozenset(
+    {
+        "example.com",
+        "example.org",
+        "example.net",
+        "example.ru",
+        "example.kz",
+        "test.com",
+        "test.ru",
+        "domain.com",
+        "domain.ru",
+        "domain.kz",
+        "yourdomain.com",
+        "yoursite.com",
+        "mysite.ru",
+        "site.ru",
+        "site.com",
+        "sait.ru",
+        "vashsait.ru",
+        "company.com",
+        "email.com",
+    }
+)
 # Hosting, CMS, site builders, widgets, error trackers: their addresses turn
 # up in footers and scripts of sites built on them, and are never the
 # company's contact.
-_SERVICE_DOMAINS = frozenset({
-    "sentry.io", "wixpress.com", "wix.com", "tilda.cc", "tilda.ws", "tildacdn.com",
-    "beget.com", "beget.ru", "timeweb.ru", "timeweb.com", "reg.ru", "nic.ru", "jino.ru",
-    "sprinthost.ru", "masterhost.ru", "hostland.ru", "fornex.com", "ps.kz", "hoster.kz",
-    "1c-bitrix.ru", "bitrix24.ru", "bitrix24.kz", "wordpress.org", "wordpress.com", "joomla.org",
-    "drupal.org", "opencart.com", "modx.com", "insales.ru", "nethouse.ru", "ukit.com", "ucoz.ru",
-    "ucoz.net", "flexbe.com", "lpgenerator.ru", "squarespace.com", "godaddy.com", "cloudflare.com",
-    "google.com", "googlegroups.com", "yandex-team.ru", "amocrm.ru", "jivosite.com", "jivo.ru",
-    "carrotquest.io", "livetex.ru",
-})
+_SERVICE_DOMAINS = frozenset(
+    {
+        "sentry.io",
+        "wixpress.com",
+        "wix.com",
+        "tilda.cc",
+        "tilda.ws",
+        "tildacdn.com",
+        "beget.com",
+        "beget.ru",
+        "timeweb.ru",
+        "timeweb.com",
+        "reg.ru",
+        "nic.ru",
+        "jino.ru",
+        "sprinthost.ru",
+        "masterhost.ru",
+        "hostland.ru",
+        "fornex.com",
+        "ps.kz",
+        "hoster.kz",
+        "1c-bitrix.ru",
+        "bitrix24.ru",
+        "bitrix24.kz",
+        "wordpress.org",
+        "wordpress.com",
+        "joomla.org",
+        "drupal.org",
+        "opencart.com",
+        "modx.com",
+        "insales.ru",
+        "nethouse.ru",
+        "ukit.com",
+        "ucoz.ru",
+        "ucoz.net",
+        "flexbe.com",
+        "lpgenerator.ru",
+        "squarespace.com",
+        "godaddy.com",
+        "cloudflare.com",
+        "google.com",
+        "googlegroups.com",
+        "yandex-team.ru",
+        "amocrm.ru",
+        "jivosite.com",
+        "jivo.ru",
+        "carrotquest.io",
+        "livetex.ru",
+    }
+)
 # Free mail providers: a small business often has nothing else, so these are
 # kept - with lower priority and a note ("email на чужом домене mail.ru").
-FREEMAIL_DOMAINS = frozenset({
-    "gmail.com", "googlemail.com", "mail.ru", "bk.ru", "inbox.ru", "list.ru", "internet.ru",
-    "yandex.ru", "yandex.kz", "yandex.by", "yandex.com", "ya.ru", "rambler.ru", "ro.ru",
-    "yahoo.com", "outlook.com", "hotmail.com", "live.com", "icloud.com", "me.com",
-    "proton.me", "protonmail.com", "mail.kz", "inbox.kz",
-})
+FREEMAIL_DOMAINS = frozenset(
+    {
+        "gmail.com",
+        "googlemail.com",
+        "mail.ru",
+        "bk.ru",
+        "inbox.ru",
+        "list.ru",
+        "internet.ru",
+        "yandex.ru",
+        "yandex.kz",
+        "yandex.by",
+        "yandex.com",
+        "ya.ru",
+        "rambler.ru",
+        "ro.ru",
+        "yahoo.com",
+        "outlook.com",
+        "hotmail.com",
+        "live.com",
+        "icloud.com",
+        "me.com",
+        "proton.me",
+        "protonmail.com",
+        "mail.kz",
+        "inbox.kz",
+    }
+)
 #: Mailbox names that mean "write to the company", in preference order.
 PREFERRED_LOCALS = ("info", "sales", "office", "mail", "contact", "contacts", "hello", "zakaz", "order")
 _HEX_ID = re.compile(r"[0-9a-f]{16,}")
 
 TIER_OWN_PREFERRED = 0  # info@/sales@/... on the site's own domain
-TIER_OWN = 1            # any other mailbox on the site's own domain
-TIER_FREEMAIL = 2       # gmail.com, mail.ru, ...
-TIER_FOREIGN = 3        # someone else's corporate domain
+TIER_OWN = 1  # any other mailbox on the site's own domain
+TIER_FREEMAIL = 2  # gmail.com, mail.ru, ...
+TIER_FOREIGN = 3  # someone else's corporate domain
 _SOURCE_RANK = {"mailto": 0, "jsonld": 0, "text": 1}
 
 
 def normalize_email(value: str | None) -> str | None:
-    """"mailto:Info%40Romashka.kz?subject=..." -> "info@romashka.kz"; None if
+    """ "mailto:Info%40Romashka.kz?subject=..." -> "info@romashka.kz"; None if
     what's left isn't an address."""
     if not value:
         return None
     candidate = unquote(value).strip().lower()
     if candidate.startswith("mailto:"):
-        candidate = candidate[len("mailto:"):]
+        candidate = candidate[len("mailto:") :]
     candidate = candidate.split("?", 1)[0].strip().strip(".")
     return candidate if _EMAIL_EXACT.fullmatch(candidate) else None
 
@@ -134,8 +272,12 @@ def email_junk_reason(email: str) -> str | None:
         return "имя файла, а не адрес"
     if local in _NOREPLY_LOCALS or local.startswith(_NOREPLY_PREFIXES):
         return "служебный no-reply"
-    if (local in _PLACEHOLDER_LOCALS or domain in _PLACEHOLDER_DOMAINS
-            or domain.startswith("example.") or base_domain(domain) in _PLACEHOLDER_DOMAINS):
+    if (
+        local in _PLACEHOLDER_LOCALS
+        or domain in _PLACEHOLDER_DOMAINS
+        or domain.startswith("example.")
+        or base_domain(domain) in _PLACEHOLDER_DOMAINS
+    ):
         return "шаблон-заглушка"
     if _HEX_ID.fullmatch(local):
         return "технический идентификатор"
@@ -198,8 +340,10 @@ def rank_emails(candidates: list[EmailCandidate], own_domains) -> list[RankedEma
         key = (tier, preferred, _SOURCE_RANK.get(candidate.source, 2), order)
         if candidate.email not in best or key < best[candidate.email][0]:
             best[candidate.email] = (key, candidate, tier)
-    return [RankedEmail(c.email, tier, c.source, c.page_url)
-            for _, c, tier in sorted(best.values(), key=lambda item: item[0])]
+    return [
+        RankedEmail(c.email, tier, c.source, c.page_url)
+        for _, c, tier in sorted(best.values(), key=lambda item: item[0])
+    ]
 
 
 # ---------------------------------------------------------------- phones
@@ -248,10 +392,23 @@ class PhoneCandidate:
 # ---------------------------------------------------------------- messengers
 
 _TG_USERNAME = re.compile(r"[A-Za-z][A-Za-z0-9_]{3,31}")
-_TG_RESERVED = frozenset({
-    "share", "joinchat", "addstickers", "addemoji", "addlist", "proxy", "socks", "iv",
-    "setlanguage", "login", "boost", "invoice", "confirmphone",
-})
+_TG_RESERVED = frozenset(
+    {
+        "share",
+        "joinchat",
+        "addstickers",
+        "addemoji",
+        "addlist",
+        "proxy",
+        "socks",
+        "iv",
+        "setlanguage",
+        "login",
+        "boost",
+        "invoice",
+        "confirmphone",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -281,8 +438,11 @@ def messenger_from_href(href: str) -> tuple[str, str] | None:
         return _telegram((query.get("domain") or [""])[0])
     if scheme in ("http", "https") and host == "wa.me":
         return _whatsapp(first_segment)
-    if scheme in ("http", "https") and host in ("api.whatsapp.com", "web.whatsapp.com") \
-            and parts.path.rstrip("/") in ("/send", ""):
+    if (
+        scheme in ("http", "https")
+        and host in ("api.whatsapp.com", "web.whatsapp.com")
+        and parts.path.rstrip("/") in ("/send", "")
+    ):
         return _whatsapp((query.get("phone") or [""])[0])
     if scheme == "whatsapp":
         return _whatsapp((query.get("phone") or [""])[0])
@@ -323,9 +483,30 @@ _CONTACT_PATTERNS = (
 )
 # Link text longer than this is an article title, not a menu item.
 _MAX_LINK_TEXT = 60
-_NON_HTML_EXTENSIONS = (".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".rtf", ".jpg", ".jpeg",
-                        ".png", ".gif", ".webp", ".svg", ".zip", ".rar", ".7z", ".mp4", ".mp3", ".txt",
-                        ".xml", ".csv")
+_NON_HTML_EXTENSIONS = (
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".xls",
+    ".xlsx",
+    ".ppt",
+    ".pptx",
+    ".rtf",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".webp",
+    ".svg",
+    ".zip",
+    ".rar",
+    ".7z",
+    ".mp4",
+    ".mp3",
+    ".txt",
+    ".xml",
+    ".csv",
+)
 
 
 def contact_link_priority(link_text: str, path: str) -> int | None:
@@ -384,6 +565,7 @@ def find_contact_links(soup: BeautifulSoup, page_url: str, max_links: int = 3) -
 
 
 # ---------------------------------------------------------------- one page
+
 
 @dataclass
 class PageContacts:
@@ -450,11 +632,28 @@ _PERSON_NAME_FIRST = re.compile(
 
 # Words that look like a surname to the regex but never are. Without this,
 # "Директор департамента Москвы" yields a person named "Департамента Москвы".
-_NOT_A_NAME = frozenset({
-    "департамента", "отдела", "компании", "организации", "предприятия",
-    "филиала", "офиса", "москвы", "россии", "группы", "проекта", "студии",
-    "агентства", "центра", "сети", "по", "и", "или",
-})
+_NOT_A_NAME = frozenset(
+    {
+        "департамента",
+        "отдела",
+        "компании",
+        "организации",
+        "предприятия",
+        "филиала",
+        "офиса",
+        "москвы",
+        "россии",
+        "группы",
+        "проекта",
+        "студии",
+        "агентства",
+        "центра",
+        "сети",
+        "по",
+        "и",
+        "или",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -547,10 +746,10 @@ def extract_page(html: str, page_url: str, max_links: int = 3) -> PageContacts:
         href = anchor["href"].strip()
         lowered = href.lower()
         if lowered.startswith("mailto:"):
-            for address in unquote(href[len("mailto:"):]).split("?", 1)[0].split(","):
+            for address in unquote(href[len("mailto:") :]).split("?", 1)[0].split(","):
                 add_email(address, "mailto")
         elif lowered.startswith("tel:"):
-            add_phone(unquote(href[len("tel:"):]), "tel")
+            add_phone(unquote(href[len("tel:") :]), "tel")
         else:
             messenger = messenger_from_href(href)
             if messenger is not None and messenger[1] not in seen_messengers:

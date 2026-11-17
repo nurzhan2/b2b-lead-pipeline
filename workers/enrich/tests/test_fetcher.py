@@ -93,11 +93,13 @@ async def test_robots_txt_that_cannot_be_reached_means_the_site_is_unavailable()
 
 @pytest.mark.asyncio
 async def test_a_redirected_robots_txt_is_followed():
-    web = FakeWeb({
-        ROBOTS: redirect("https://www.romashka.kz/robots.txt"),
-        "https://www.romashka.kz/robots.txt": text("User-agent: *\nDisallow: /\n"),
-        HOME: html("<p>home</p>"),
-    })
+    web = FakeWeb(
+        {
+            ROBOTS: redirect("https://www.romashka.kz/robots.txt"),
+            "https://www.romashka.kz/robots.txt": text("User-agent: *\nDisallow: /\n"),
+            HOME: html("<p>home</p>"),
+        }
+    )
     client, fetcher = make_fetcher(web)
     async with client:
         with pytest.raises(RobotsDisallowed):
@@ -169,12 +171,14 @@ async def test_an_absurd_crawl_delay_is_capped():
 @pytest.mark.asyncio
 async def test_a_redirect_to_another_site_checks_that_sites_robots_txt():
     other_robots = "https://www.romashka-group.kz/robots.txt"
-    web = FakeWeb({
-        ROBOTS: text(ALLOW),
-        HOME: redirect("https://www.romashka-group.kz/"),
-        other_robots: text("User-agent: *\nDisallow: /\n"),
-        "https://www.romashka-group.kz/": html("<p>group</p>"),
-    })
+    web = FakeWeb(
+        {
+            ROBOTS: text(ALLOW),
+            HOME: redirect("https://www.romashka-group.kz/"),
+            other_robots: text("User-agent: *\nDisallow: /\n"),
+            "https://www.romashka-group.kz/": html("<p>group</p>"),
+        }
+    )
     client, fetcher = make_fetcher(web)
     async with client:
         with pytest.raises(RobotsDisallowed):

@@ -32,8 +32,9 @@ class AmoRateLimited(AmoError):
 
 
 class AmoClient:
-    def __init__(self, base_url: str, access_token: str,
-                 client: httpx.AsyncClient | None = None, timeout_seconds: float = 30.0):
+    def __init__(
+        self, base_url: str, access_token: str, client: httpx.AsyncClient | None = None, timeout_seconds: float = 30.0
+    ):
         self._base_url = base_url.rstrip("/")
         self._token = access_token
         self._timeout = timeout_seconds
@@ -64,7 +65,8 @@ class AmoClient:
 
     async def add_note(self, lead_id: int, text: str) -> None:
         await self._request(
-            "POST", f"/api/v4/leads/{lead_id}/notes",
+            "POST",
+            f"/api/v4/leads/{lead_id}/notes",
             json=[{"note_type": "common", "params": {"text": text}}],
         )
 
@@ -75,14 +77,16 @@ class AmoClient:
         }
         try:
             response = await self._client.request(
-                method, f"{self._base_url}{path}", headers=headers,
-                timeout=self._timeout, **kwargs)
+                method, f"{self._base_url}{path}", headers=headers, timeout=self._timeout, **kwargs
+            )
         except httpx.TransportError as exc:
             raise AmoError(f"transport error: {exc}") from exc
 
         if response.status_code in (401, 403):
-            raise AmoAuthError(f"{response.status_code}: проверь AMO_ACCESS_TOKEN и AMO_BASE_URL "
-                               f"(домен берётся из поля api_domain в токене) - {response.text[:200]}")
+            raise AmoAuthError(
+                f"{response.status_code}: проверь AMO_ACCESS_TOKEN и AMO_BASE_URL "
+                f"(домен берётся из поля api_domain в токене) - {response.text[:200]}"
+            )
         if response.status_code == 429:
             raise AmoRateLimited("429 - слишком часто")
         if response.status_code >= 400:

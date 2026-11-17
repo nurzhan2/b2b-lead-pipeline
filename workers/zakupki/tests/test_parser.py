@@ -435,9 +435,7 @@ DETAIL_223_HTML = """
 </body></html>
 """
 
-DETAIL_223_URL = (
-    "https://zakupki.gov.ru/223/purchase/public/purchase/info/common-info.html?regNumber=32616327624"
-)
+DETAIL_223_URL = "https://zakupki.gov.ru/223/purchase/public/purchase/info/common-info.html?regNumber=32616327624"
 
 
 def test_parses_a_full_223_detail_card():

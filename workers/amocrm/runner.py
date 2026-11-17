@@ -69,8 +69,11 @@ class AmoRunner:
                 self._seen.add(str(lead.get("leadId")))
                 if self._pushed >= self._settings.max_leads_per_run:
                     stats["aborted"] = "max_leads_reached"
-                    log.warning("amo.cap_reached", cap=self._settings.max_leads_per_run,
-                                hint="остальные лиды остались в очереди")
+                    log.warning(
+                        "amo.cap_reached",
+                        cap=self._settings.max_leads_per_run,
+                        hint="остальные лиды остались в очереди",
+                    )
                     break
 
                 try:
@@ -106,8 +109,7 @@ class AmoRunner:
         lead_id = lead.get("leadId")
 
         if self._settings.dry_run:
-            log.info("amo.dry_run", lead_id=lead_id, deal=deal_name(lead),
-                     note=build_note(lead)[:200])
+            log.info("amo.dry_run", lead_id=lead_id, deal=deal_name(lead), note=build_note(lead)[:200])
             return
 
         deal_payload = build_lead_payload(
@@ -135,5 +137,11 @@ class AmoRunner:
         ok = await self._core.mark_pushed(lead_id, CHANNEL, amo_lead_id)
         stats["marked" if ok else "mark_failed"] += 1
 
-        log.info("amo.lead_pushed", lead_id=lead_id, amo_lead_id=amo_lead_id,
-                 company=lead.get("name"), score=lead.get("score"), marked=ok)
+        log.info(
+            "amo.lead_pushed",
+            lead_id=lead_id,
+            amo_lead_id=amo_lead_id,
+            company=lead.get("name"),
+            score=lead.get("score"),
+            marked=ok,
+        )

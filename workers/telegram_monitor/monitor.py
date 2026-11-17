@@ -58,8 +58,7 @@ class TelegramOrderMonitor:
         # Marked peer ids, not entities: Telethon matches a negative id
         # verbatim when building the event filter, so nothing here triggers a
         # resolve. Passing entity objects would send us back to square one.
-        self._client.add_event_handler(
-            self._on_message, events.NewMessage(chats=outcome.peer_ids))
+        self._client.add_event_handler(self._on_message, events.NewMessage(chats=outcome.peer_ids))
 
         print(outcome.summary_line())
         log.info(

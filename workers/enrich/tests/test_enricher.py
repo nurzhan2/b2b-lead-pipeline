@@ -80,8 +80,7 @@ async def test_stops_visiting_pages_once_it_has_what_the_company_lacks():
 
     # Phone was on the homepage, a corporate email on /kontakty/ - nothing
     # left to look for, so the other two candidate pages are never requested.
-    assert web.urls == ["https://romashka.kz/robots.txt", "https://romashka.kz/",
-                        "https://romashka.kz/kontakty/"]
+    assert web.urls == ["https://romashka.kz/robots.txt", "https://romashka.kz/", "https://romashka.kz/kontakty/"]
 
 
 @pytest.mark.asyncio
@@ -161,10 +160,12 @@ async def test_a_broken_robots_txt_keeps_us_out():
 
 @pytest.mark.asyncio
 async def test_an_unreachable_site_is_an_outcome_not_an_exception():
-    web = FakeWeb({
-        "https://romashka.kz/robots.txt": fail(httpx.ConnectError, "Name or service not known"),
-        "http://romashka.kz/robots.txt": fail(httpx.ConnectError, "Name or service not known"),
-    })
+    web = FakeWeb(
+        {
+            "https://romashka.kz/robots.txt": fail(httpx.ConnectError, "Name or service not known"),
+            "http://romashka.kz/robots.txt": fail(httpx.ConnectError, "Name or service not known"),
+        }
+    )
     outcome = await enrich(web)
 
     assert outcome.status == UNAVAILABLE
@@ -176,12 +177,14 @@ async def test_an_unreachable_site_is_an_outcome_not_an_exception():
 
 @pytest.mark.asyncio
 async def test_a_site_that_times_out_is_unavailable():
-    web = FakeWeb({
-        "https://romashka.kz/robots.txt": text(ROBOTS_OK),
-        "https://romashka.kz/": fail(httpx.ReadTimeout, "timed out"),
-        "http://romashka.kz/robots.txt": text(ROBOTS_OK),
-        "http://romashka.kz/": fail(httpx.ReadTimeout, "timed out"),
-    })
+    web = FakeWeb(
+        {
+            "https://romashka.kz/robots.txt": text(ROBOTS_OK),
+            "https://romashka.kz/": fail(httpx.ReadTimeout, "timed out"),
+            "http://romashka.kz/robots.txt": text(ROBOTS_OK),
+            "http://romashka.kz/": fail(httpx.ReadTimeout, "timed out"),
+        }
+    )
     outcome = await enrich(web)
 
     assert outcome.status == UNAVAILABLE
@@ -224,7 +227,8 @@ async def test_a_site_without_contacts_is_a_normal_nothing_found():
     assert outcome.status == NOTHING_FOUND
     assert outcome.notes == "контакты не найдены (страниц просмотрено: 1)"
     assert outcome.to_patch().model_dump(by_alias=True, exclude_none=True) == {
-        "enrichNotes": "контакты не найдены (страниц просмотрено: 1)"}
+        "enrichNotes": "контакты не найдены (страниц просмотрено: 1)"
+    }
 
 
 @pytest.mark.asyncio
@@ -253,13 +257,15 @@ async def test_a_free_mail_address_is_taken_but_flagged():
 @pytest.mark.asyncio
 async def test_after_a_redirect_the_new_domain_counts_as_the_companys_own():
     group = "https://www.romashka-group.kz"
-    web = FakeWeb({
-        "https://romashka.kz/robots.txt": text(ROBOTS_OK),
-        "https://romashka.kz/": redirect(f"{group}/"),
-        f"{group}/robots.txt": text(ROBOTS_OK),
-        f"{group}/": html('<a href="/contacts/">Контакты</a>'),
-        f"{group}/contacts/": html("<p>sales@romashka-group.kz, romashka@gmail.com</p>"),
-    })
+    web = FakeWeb(
+        {
+            "https://romashka.kz/robots.txt": text(ROBOTS_OK),
+            "https://romashka.kz/": redirect(f"{group}/"),
+            f"{group}/robots.txt": text(ROBOTS_OK),
+            f"{group}/": html('<a href="/contacts/">Контакты</a>'),
+            f"{group}/contacts/": html("<p>sales@romashka-group.kz, romashka@gmail.com</p>"),
+        }
+    )
     outcome = await enrich(web)
 
     assert outcome.email == "sales@romashka-group.kz"

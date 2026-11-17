@@ -5,14 +5,14 @@ built around. Pure date arithmetic, no network.
 clock passes today and fails in six weeks.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
 from workers.hh.staleness import age_days, is_stale, parse_published_at
 from workers.hh.tests.fixtures import VACANCY_ITEM
 
-NOW = datetime(2026, 8, 30, 12, 0, 0, tzinfo=timezone.utc)
+NOW = datetime(2026, 8, 30, 12, 0, 0, tzinfo=UTC)
 
 
 # --- parse_published_at ---------------------------------------------------
@@ -81,11 +81,17 @@ def test_age_days_respects_the_timezone_offset():
 # --- is_stale -------------------------------------------------------------
 
 
-@pytest.mark.parametrize(("age", "expected"), [
-    (0, False), (1, False), (44, False),
-    (45, True),      # exactly at the threshold counts as stale
-    (46, True), (400, True),
-])
+@pytest.mark.parametrize(
+    ("age", "expected"),
+    [
+        (0, False),
+        (1, False),
+        (44, False),
+        (45, True),  # exactly at the threshold counts as stale
+        (46, True),
+        (400, True),
+    ],
+)
 def test_is_stale_at_the_default_threshold(age, expected):
     assert is_stale(age, stale_days=45) is expected
 

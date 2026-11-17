@@ -22,8 +22,7 @@ FAST = {"retry_attempts": 3, "retry_base_seconds": 0.001, "retry_max_seconds": 0
 
 def make(handler, **kwargs):
     http_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
-    return http_client, HhClient(http_client, user_agent="test-agent",
-                                 request_delay_seconds=0, **{**FAST, **kwargs})
+    return http_client, HhClient(http_client, user_agent="test-agent", request_delay_seconds=0, **{**FAST, **kwargs})
 
 
 # --- HH's documented depth cap -------------------------------------------
@@ -32,9 +31,9 @@ def make(handler, **kwargs):
 def test_max_page_matches_hh_documented_2000_result_depth():
     """HH: "глубина возвращаемых результатов не может быть больше 2000"."""
     assert MAX_RESULT_DEPTH == 2000
-    assert max_page(100) == 19    # results 1901..2000; page 20 would error
+    assert max_page(100) == 19  # results 1901..2000; page 20 would error
     assert max_page(50) == 39
-    assert max_page(10) == 199    # HH's own example: per_page=10&page=199 ok
+    assert max_page(10) == 199  # HH's own example: per_page=10&page=199 ok
 
 
 def test_max_page_clamps_per_page_to_hh_maximum():
@@ -50,8 +49,7 @@ async def test_pagination_stops_at_the_depth_cap_not_at_a_400():
 
     def handler(request):
         pages_requested.append(int(dict(request.url.params)["page"]))
-        return httpx.Response(200, json={**SEARCH_RESPONSE, "pages": 999,
-                                         "items": [vacancy(vacancy_id="x")]})
+        return httpx.Response(200, json={**SEARCH_RESPONSE, "pages": 999, "items": [vacancy(vacancy_id="x")]})
 
     http_client, client = make(handler, per_page=100)
     async with http_client:
@@ -67,8 +65,7 @@ async def test_pagination_respects_max_pages_when_lower_than_the_cap():
 
     def handler(request):
         pages.append(int(dict(request.url.params)["page"]))
-        return httpx.Response(200, json={**SEARCH_RESPONSE, "pages": 999,
-                                         "items": [vacancy()]})
+        return httpx.Response(200, json={**SEARCH_RESPONSE, "pages": 999, "items": [vacancy()]})
 
     http_client, client = make(handler, per_page=100)
     async with http_client:
@@ -83,8 +80,7 @@ async def test_pagination_stops_when_hh_reports_fewer_pages():
 
     def handler(request):
         calls.append(1)
-        return httpx.Response(200, json={**SEARCH_RESPONSE, "pages": 2,
-                                         "items": [vacancy()]})
+        return httpx.Response(200, json={**SEARCH_RESPONSE, "pages": 2, "items": [vacancy()]})
 
     http_client, client = make(handler)
     async with http_client:
@@ -176,6 +172,7 @@ async def test_403_raises_auth_error_without_retrying():
 async def test_auth_error_propagates_out_of_pagination():
     """Every later request would fail identically, so the run must be able
     to stop rather than grind through the whole grid."""
+
     def handler(request):
         return httpx.Response(403, json={"errors": [{"type": "forbidden"}]})
 
@@ -253,6 +250,7 @@ async def test_fetch_employer_returns_site_url():
 @pytest.mark.asyncio
 async def test_fetch_employer_failure_is_not_fatal():
     """The lead is still usable without a domain."""
+
     def handler(request):
         return httpx.Response(404, json={"errors": [{"type": "not_found"}]})
 

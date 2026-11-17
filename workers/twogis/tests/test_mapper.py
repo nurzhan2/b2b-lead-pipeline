@@ -48,10 +48,12 @@ def test_has_site_true_when_website_contact_present():
         "id": "1",
         "full_name": "Stroy Master",
         "contact_groups": [
-            {"contacts": [
-                {"type": "phone", "value": "+77021234567"},
-                {"type": "website", "value": "https://stroymaster.kz"},
-            ]},
+            {
+                "contacts": [
+                    {"type": "phone", "value": "+77021234567"},
+                    {"type": "website", "value": "https://stroymaster.kz"},
+                ]
+            },
         ],
     }
 

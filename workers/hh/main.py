@@ -59,8 +59,8 @@ async def _run() -> None:
         log.warning(
             "hh.no_token",
             hint="HH_TOKEN is empty. HH's docs: без токена после первого запроса "
-                 "предлагается капча; на практике /vacancies отвечает 403. "
-                 "Register an app at https://dev.hh.ru/admin - see README.md.",
+            "предлагается капча; на практике /vacancies отвечает 403. "
+            "Register an app at https://dev.hh.ru/admin - see README.md.",
         )
 
     async with httpx.AsyncClient(timeout=settings.request_timeout_seconds + 10) as http_client:

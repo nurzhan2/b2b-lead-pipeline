@@ -66,11 +66,13 @@ class WhoisXmlNrdProvider(NewDomainsProvider):
                 domain = raw_record.get("domainName") or raw_record.get("domain")
                 if not domain:
                     continue
-                records.append({
-                    "domain": domain,
-                    "registered_date": raw_record.get("date") or raw_record.get("createdDate"),
-                    "registrar": raw_record.get("registrarName") or raw_record.get("registrar"),
-                })
+                records.append(
+                    {
+                        "domain": domain,
+                        "registered_date": raw_record.get("date") or raw_record.get("createdDate"),
+                        "registrar": raw_record.get("registrarName") or raw_record.get("registrar"),
+                    }
+                )
         return records
 
 
@@ -126,11 +128,13 @@ class CustomHttpProvider(NewDomainsProvider):
             domain = item.get("domain")
             if not domain:
                 continue
-            records.append({
-                "domain": domain,
-                "registered_date": item.get("registered_date"),
-                "registrar": item.get("registrar"),
-            })
+            records.append(
+                {
+                    "domain": domain,
+                    "registered_date": item.get("registered_date"),
+                    "registrar": item.get("registrar"),
+                }
+            )
         return records
 
 

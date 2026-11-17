@@ -38,22 +38,29 @@ async def _run() -> int:
         log.error(
             "egrul.no_api_key",
             hint="DADATA_API_KEY пуст. Зарегистрируйся на dadata.ru, подтверди почту, "
-                 "скопируй ключ из раздела 'Ключи' в личном кабинете и впиши его в "
-                 "workers/egrul/.env. Бесплатный тариф - 10 000 запросов в день.",
+            "скопируй ключ из раздела 'Ключи' в личном кабинете и впиши его в "
+            "workers/egrul/.env. Бесплатный тариф - 10 000 запросов в день.",
         )
         return 1
 
-    log.info("egrul.starting", core_url=settings.core_url, batch=settings.egrul_batch,
-             max_batches=settings.max_batches_per_run, concurrency=settings.egrul_concurrency,
-             max_lookups=settings.max_lookups_per_run,
-             min_similarity=settings.min_name_similarity)
+    log.info(
+        "egrul.starting",
+        core_url=settings.core_url,
+        batch=settings.egrul_batch,
+        max_batches=settings.max_batches_per_run,
+        concurrency=settings.egrul_concurrency,
+        max_lookups=settings.max_lookups_per_run,
+        min_similarity=settings.min_name_similarity,
+    )
 
-    limits = httpx.Limits(max_connections=settings.egrul_concurrency * 2,
-                          max_keepalive_connections=settings.egrul_concurrency)
+    limits = httpx.Limits(
+        max_connections=settings.egrul_concurrency * 2, max_keepalive_connections=settings.egrul_concurrency
+    )
     core = CoreClient(settings.core_url)
     async with httpx.AsyncClient(limits=limits, timeout=settings.request_timeout_seconds) as http_client:
-        dadata = DadataClient(settings.dadata_api_key, client=http_client,
-                              timeout_seconds=settings.request_timeout_seconds)
+        dadata = DadataClient(
+            settings.dadata_api_key, client=http_client, timeout_seconds=settings.request_timeout_seconds
+        )
         try:
             while True:
                 runner = EgrulRunner(settings, core, dadata)

@@ -59,22 +59,37 @@ SHEETS = {
     "Без сайта": BASE_SELECT + " where c.has_site = false" + ORDER,
     # "Measured and bad" - never "unmeasured". A site nobody checked is not
     # a site that needs work, and putting it here would waste a call.
-    "Сайт на доработку": BASE_SELECT + """
+    "Сайт на доработку": BASE_SELECT
+    + """
         where (c.raw ->> 'auditFails') ~ '^[0-9]+$'
           and (c.raw ->> 'auditFails')::int >= 3
            or ((c.raw ->> 'pagespeed') ~ '^[0-9]+$' and (c.raw ->> 'pagespeed')::int < 50)
-    """ + ORDER,
-    "Есть руководитель": BASE_SELECT + """
+    """
+    + ORDER,
+    "Есть руководитель": BASE_SELECT
+    + """
         where coalesce(c.raw ->> 'contact_person', c.raw ->> 'ceo_name', '') <> ''
-    """ + ORDER,
+    """
+    + ORDER,
 }
 
 HEADERS = [
-    ("Скор", 7), ("Статус", 11), ("Компания", 34), ("Кого спрашивать", 30),
-    ("Телефон", 17), ("Тип", 12), ("Email", 26), ("Мессенджер", 18),
-    ("Город", 15), ("Сайт", 22), ("Источник", 11),
-    ("PageSpeed", 10), ("Провалов", 9), ("Что не так с сайтом", 42),
-    ("Почему лид", 42), ("Ссылка", 28),
+    ("Скор", 7),
+    ("Статус", 11),
+    ("Компания", 34),
+    ("Кого спрашивать", 30),
+    ("Телефон", 17),
+    ("Тип", 12),
+    ("Email", 26),
+    ("Мессенджер", 18),
+    ("Город", 15),
+    ("Сайт", 22),
+    ("Источник", 11),
+    ("PageSpeed", 10),
+    ("Провалов", 9),
+    ("Что не так с сайтом", 42),
+    ("Почему лид", 42),
+    ("Ссылка", 28),
 ]
 
 HEADER_FILL = PatternFill("solid", fgColor="1F3864")
@@ -114,17 +129,44 @@ def write_sheet(workbook, title: str, rows: list[tuple]) -> int:
     sheet.row_dimensions[1].height = 28
 
     for row_index, row in enumerate(rows, start=2):
-        (score, status, name, contact_person, ceo_name, ceo_post, phone, phone_type,
-         email, messenger, city, domain, source, pagespeed, audit_fails, checks,
-         reason, source_url) = row
+        (
+            score,
+            status,
+            name,
+            contact_person,
+            ceo_name,
+            ceo_post,
+            phone,
+            phone_type,
+            email,
+            messenger,
+            city,
+            domain,
+            source,
+            pagespeed,
+            audit_fails,
+            checks,
+            reason,
+            source_url,
+        ) = row
 
         values = [
-            score, status, name,
+            score,
+            status,
+            name,
             who_to_ask(contact_person, ceo_name, ceo_post),
-            phone, phone_type, email, messenger, city, domain, source,
+            phone,
+            phone_type,
+            email,
+            messenger,
+            city,
+            domain,
+            source,
             int(pagespeed) if pagespeed else None,
             int(audit_fails) if audit_fails else None,
-            pretty_checks(checks), reason, source_url,
+            pretty_checks(checks),
+            reason,
+            source_url,
         ]
 
         for col_index, value in enumerate(values, start=1):
@@ -147,8 +189,9 @@ def write_sheet(workbook, title: str, rows: list[tuple]) -> int:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", default=None)
-    parser.add_argument("--dsn", default=os.environ.get(
-        "LEADGEN_DSN", "postgresql://qorsa:qorsa@localhost:5432/qorsa_leadgen"))
+    parser.add_argument(
+        "--dsn", default=os.environ.get("LEADGEN_DSN", "postgresql://qorsa:qorsa@localhost:5432/qorsa_leadgen")
+    )
     args = parser.parse_args()
 
     workbook = Workbook()

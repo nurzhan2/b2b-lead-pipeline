@@ -43,21 +43,34 @@ async def _run(args) -> int:
     log = structlog.get_logger(__name__)
 
     if not settings.amo_access_token and not settings.dry_run:
-        log.error("amo.no_token",
-                  hint="AMO_ACCESS_TOKEN пуст. Долгосрочный токен берётся в карточке "
-                       "интеграции, вкладка 'Ключи и доступы'. Впиши его в "
-                       "workers/amocrm/.env.")
+        log.error(
+            "amo.no_token",
+            hint="AMO_ACCESS_TOKEN пуст. Долгосрочный токен берётся в карточке "
+            "интеграции, вкладка 'Ключи и доступы'. Впиши его в "
+            "workers/amocrm/.env.",
+        )
         return 1
 
-    log.info("amo.starting", core_url=settings.core_url, amo_base_url=settings.amo_base_url,
-             batch=settings.push_batch, max_leads=settings.max_leads_per_run,
-             pipeline_id=settings.amo_pipeline_id, status_id=settings.amo_status_id,
-             tag=settings.amo_tag, dry_run=settings.dry_run)
+    log.info(
+        "amo.starting",
+        core_url=settings.core_url,
+        amo_base_url=settings.amo_base_url,
+        batch=settings.push_batch,
+        max_leads=settings.max_leads_per_run,
+        pipeline_id=settings.amo_pipeline_id,
+        status_id=settings.amo_status_id,
+        tag=settings.amo_tag,
+        dry_run=settings.dry_run,
+    )
 
     core = CoreClient(settings.core_url)
     async with httpx.AsyncClient(timeout=settings.request_timeout_seconds) as http_client:
-        amo = AmoClient(settings.amo_base_url, settings.amo_access_token,
-                        client=http_client, timeout_seconds=settings.request_timeout_seconds)
+        amo = AmoClient(
+            settings.amo_base_url,
+            settings.amo_access_token,
+            client=http_client,
+            timeout_seconds=settings.request_timeout_seconds,
+        )
 
         if not settings.dry_run:
             # One cheap request to prove the token before creating anything.
@@ -86,8 +99,7 @@ async def _run(args) -> int:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dry-run", action="store_true",
-                        help="показать, что было бы создано, ничего не создавая")
+    parser.add_argument("--dry-run", action="store_true", help="показать, что было бы создано, ничего не создавая")
     parser.add_argument("--limit", type=int, help="ограничить число лидов за прогон")
     args = parser.parse_args()
     try:

@@ -48,8 +48,7 @@ class TestDealName:
 class TestContactName:
     def test_procurement_official_wins_over_ceo(self):
         # The official runs THIS purchase; the CEO merely signs.
-        name = contact_name(lead(contactPerson="Иванова М.П.",
-                                 ceoName="Петров П.П.", ceoPost="Директор"))
+        name = contact_name(lead(contactPerson="Иванова М.П.", ceoName="Петров П.П.", ceoPost="Директор"))
 
         assert name == "Иванова М.П."
 

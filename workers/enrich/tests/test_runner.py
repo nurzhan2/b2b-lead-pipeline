@@ -63,7 +63,8 @@ class FakeEnricher:
             if company.id in self._crash_for:
                 raise RuntimeError("parser exploded")
             return self._outcomes.get(company.id) or EnrichOutcome(
-                NOTHING_FOUND, notes="контакты не найдены (страниц просмотрено: 1)", pages_fetched=1)
+                NOTHING_FOUND, notes="контакты не найдены (страниц просмотрено: 1)", pages_fetched=1
+            )
         finally:
             self.in_flight -= 1
 
@@ -101,15 +102,26 @@ async def test_an_unavailable_site_is_still_patched():
 @pytest.mark.asyncio
 async def test_found_contacts_are_sent_in_the_core_contract_shape():
     core = FakeCore(batches=[companies("a")])
-    enricher = FakeEnricher({"a": EnrichOutcome(FOUND, email="info@a.kz", phone="+77273551020",
-                                                messenger="https://wa.me/77012345678",
-                                                notes="email с /kontakty/")})
+    enricher = FakeEnricher(
+        {
+            "a": EnrichOutcome(
+                FOUND,
+                email="info@a.kz",
+                phone="+77273551020",
+                messenger="https://wa.me/77012345678",
+                notes="email с /kontakty/",
+            )
+        }
+    )
 
     summary = await run(core, enricher)
 
     assert core.patches[0][1].model_dump(by_alias=True, exclude_none=True) == {
-        "email": "info@a.kz", "phone": "+77273551020", "messenger": "https://wa.me/77012345678",
-        "enrichNotes": "email с /kontakty/"}
+        "email": "info@a.kz",
+        "phone": "+77273551020",
+        "messenger": "https://wa.me/77012345678",
+        "enrichNotes": "email с /kontakty/",
+    }
     assert summary["with_email"] == summary["with_phone"] == summary["with_messenger"] == 1
 
 
@@ -210,8 +222,7 @@ async def test_concurrency_is_bounded_by_the_semaphore():
 async def test_there_is_a_pause_after_every_site():
     sleep = NoSleep()
 
-    await run(FakeCore(batches=[companies("a", "b", "c")]), FakeEnricher(), sleep=sleep,
-              request_delay_seconds=2.5)
+    await run(FakeCore(batches=[companies("a", "b", "c")]), FakeEnricher(), sleep=sleep, request_delay_seconds=2.5)
 
     assert sleep.calls == [2.5, 2.5, 2.5]
 

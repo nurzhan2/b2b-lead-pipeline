@@ -42,7 +42,9 @@ class OverpassClientError(Exception):
     """Other 4xx / malformed query - NOT retryable."""
 
 
-def build_query(bbox: tuple[float, float, float, float], key: str, value: str | None, limit: int, timeout: int = 60) -> str:
+def build_query(
+    bbox: tuple[float, float, float, float], key: str, value: str | None, limit: int, timeout: int = 60
+) -> str:
     """Pure: builds the Overpass QL string for one (bbox, tag) combo."""
     south, west, north, east = bbox
     tag_filter = f'["{key}"="{value}"]' if value else f'["{key}"]'
@@ -50,9 +52,9 @@ def build_query(bbox: tuple[float, float, float, float], key: str, value: str | 
     return (
         f"[out:json][timeout:{timeout}];\n"
         f"(\n"
-        f'  node{tag_filter}{bbox_clause};\n'
-        f'  way{tag_filter}{bbox_clause};\n'
-        f'  relation{tag_filter}{bbox_clause};\n'
+        f"  node{tag_filter}{bbox_clause};\n"
+        f"  way{tag_filter}{bbox_clause};\n"
+        f"  relation{tag_filter}{bbox_clause};\n"
         f");\n"
         f"out tags {limit};"
     )
@@ -122,10 +124,8 @@ class OverpassClient:
         rotation restarts the backoff sequence rather than inheriting an
         already-long one."""
         retryer = AsyncRetrying(
-            retry=retry_if_exception_type(
-                (OverpassRateLimitError, OverpassServerError, httpx.TransportError)),
-            wait=wait_exponential(
-                multiplier=self._retry_base, min=self._retry_base, max=self._retry_max),
+            retry=retry_if_exception_type((OverpassRateLimitError, OverpassServerError, httpx.TransportError)),
+            wait=wait_exponential(multiplier=self._retry_base, min=self._retry_base, max=self._retry_max),
             stop=stop_after_attempt(self._retry_attempts),
             reraise=True,
         )
@@ -154,8 +154,7 @@ class OverpassClient:
             log.warning("osm.server_error", status=response.status_code, endpoint=endpoint)
             raise OverpassServerError(f"{response.status_code} from {endpoint}")
         if response.status_code >= 400:
-            log.error("osm.client_error", status=response.status_code, endpoint=endpoint,
-                      body=response.text[:300])
+            log.error("osm.client_error", status=response.status_code, endpoint=endpoint, body=response.text[:300])
             raise OverpassClientError(f"{response.status_code} from {endpoint}: {response.text[:200]}")
 
         return response.json()
@@ -182,14 +181,20 @@ class OverpassClient:
                 return []
             except (OverpassRateLimitError, OverpassServerError) as exc:
                 if not self._rotate_endpoint():
-                    log.error("osm.giving_up_on_combo", key=key, value=value,
-                              reason="all endpoints exhausted", error=str(exc))
+                    log.error(
+                        "osm.giving_up_on_combo", key=key, value=value, reason="all endpoints exhausted", error=str(exc)
+                    )
                     return []
                 continue
             except httpx.TransportError as exc:
                 if not self._rotate_endpoint():
-                    log.error("osm.giving_up_on_combo", key=key, value=value,
-                              reason="transport error, no other endpoint", error=str(exc))
+                    log.error(
+                        "osm.giving_up_on_combo",
+                        key=key,
+                        value=value,
+                        reason="transport error, no other endpoint",
+                        error=str(exc),
+                    )
                     return []
                 continue
             return parse_elements(payload)

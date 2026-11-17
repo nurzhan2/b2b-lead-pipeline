@@ -31,8 +31,15 @@ def test_merge_prefers_detail_page_subject_and_budget():
 
 def test_merge_falls_back_to_list_page_subject_when_detail_page_has_none():
     purchase = {"subject": "list page subject", "price": None, "region": None, "inn": None}
-    details = {"subject": None, "budget": None, "deadline": None, "law_type": None,
-               "customer_inn": None, "customer_phone": None, "region": None}
+    details = {
+        "subject": None,
+        "budget": None,
+        "deadline": None,
+        "law_type": None,
+        "customer_inn": None,
+        "customer_phone": None,
+        "region": None,
+    }
 
     merged = merge_purchase_with_details(purchase, details)
 
@@ -41,8 +48,15 @@ def test_merge_falls_back_to_list_page_subject_when_detail_page_has_none():
 
 def test_merge_falls_back_to_parsing_list_page_price_when_detail_budget_missing():
     purchase = {"price": "1 500 000,00 ₽", "region": None, "inn": None}
-    details = {"budget": None, "subject": None, "deadline": None, "law_type": None,
-               "customer_inn": None, "customer_phone": None, "region": None}
+    details = {
+        "budget": None,
+        "subject": None,
+        "deadline": None,
+        "law_type": None,
+        "customer_inn": None,
+        "customer_phone": None,
+        "region": None,
+    }
 
     merged = merge_purchase_with_details(purchase, details)
 
@@ -53,8 +67,15 @@ def test_merge_keeps_list_page_region_over_detail_page_region():
     """The list page's own region (when it has one) is already
     trustworthy - the detail page's is only a fallback."""
     purchase = {"region": "Список: Москва", "price": None, "inn": None}
-    details = {"region": "Карточка: Москва", "budget": None, "subject": None,
-               "deadline": None, "law_type": None, "customer_inn": None, "customer_phone": None}
+    details = {
+        "region": "Карточка: Москва",
+        "budget": None,
+        "subject": None,
+        "deadline": None,
+        "law_type": None,
+        "customer_inn": None,
+        "customer_phone": None,
+    }
 
     merged = merge_purchase_with_details(purchase, details)
 
@@ -63,8 +84,15 @@ def test_merge_keeps_list_page_region_over_detail_page_region():
 
 def test_merge_prefers_detail_page_inn_over_list_page_inn():
     purchase = {"inn": "1111111111", "price": None, "region": None}
-    details = {"customer_inn": "2222222222", "budget": None, "subject": None,
-               "deadline": None, "law_type": None, "customer_phone": None, "region": None}
+    details = {
+        "customer_inn": "2222222222",
+        "budget": None,
+        "subject": None,
+        "deadline": None,
+        "law_type": None,
+        "customer_phone": None,
+        "region": None,
+    }
 
     merged = merge_purchase_with_details(purchase, details)
 
@@ -73,8 +101,15 @@ def test_merge_prefers_detail_page_inn_over_list_page_inn():
 
 def test_merge_falls_back_to_list_page_inn_when_detail_page_has_none():
     purchase = {"inn": "1111111111", "price": None, "region": None}
-    details = {"customer_inn": None, "budget": None, "subject": None,
-               "deadline": None, "law_type": None, "customer_phone": None, "region": None}
+    details = {
+        "customer_inn": None,
+        "budget": None,
+        "subject": None,
+        "deadline": None,
+        "law_type": None,
+        "customer_phone": None,
+        "region": None,
+    }
 
     merged = merge_purchase_with_details(purchase, details)
 

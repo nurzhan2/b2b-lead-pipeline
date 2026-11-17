@@ -11,8 +11,7 @@ MODULE_DIR = Path(__file__).resolve().parent
 # ("qorsa-leadgen-enrich") is what a site's robots.txt would address us by in
 # a `User-agent:` line - see fetcher.product_token().
 DEFAULT_USER_AGENT = (
-    "qorsa-leadgen-enrich/1.0 "
-    "(contact enrichment bot; reads public contact pages only; respects robots.txt)"
+    "qorsa-leadgen-enrich/1.0 (contact enrichment bot; reads public contact pages only; respects robots.txt)"
 )
 
 

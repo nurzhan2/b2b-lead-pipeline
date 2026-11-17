@@ -49,11 +49,23 @@ order by l.score desc, c.name asc
 """
 
 HEADERS = [
-    ("Скор", 7), ("Статус", 11), ("Компания", 34), ("Источник", 11),
-    ("Телефон", 17), ("Email", 26), ("Мессенджер", 18), ("Город", 15),
-    ("Сайт", 24), ("Адрес", 34), ("Почему лид", 46),
-    ("PageSpeed", 11), ("Провалов", 10), ("Что не так с сайтом", 40),
-    ("Тип телефона", 13), ("Ссылка на источник", 30), ("Добавлен", 18),
+    ("Скор", 7),
+    ("Статус", 11),
+    ("Компания", 34),
+    ("Источник", 11),
+    ("Телефон", 17),
+    ("Email", 26),
+    ("Мессенджер", 18),
+    ("Город", 15),
+    ("Сайт", 24),
+    ("Адрес", 34),
+    ("Почему лид", 46),
+    ("PageSpeed", 11),
+    ("Провалов", 10),
+    ("Что не так с сайтом", 40),
+    ("Тип телефона", 13),
+    ("Ссылка на источник", 30),
+    ("Добавлен", 18),
 ]
 
 HEADER_FILL = PatternFill("solid", fgColor="1F3864")
@@ -89,17 +101,43 @@ def write_sheet(workbook, title: str, rows: list[tuple], highlight_hot: bool) ->
     sheet.row_dimensions[1].height = 28
 
     for row_index, row in enumerate(rows, start=2):
-        (score, status, name, source, phone, email, messenger, city, domain,
-         address, reason, pagespeed, audit_fails, checks, phone_type,
-         source_url, created_at) = row
+        (
+            score,
+            status,
+            name,
+            source,
+            phone,
+            email,
+            messenger,
+            city,
+            domain,
+            address,
+            reason,
+            pagespeed,
+            audit_fails,
+            checks,
+            phone_type,
+            source_url,
+            created_at,
+        ) = row
 
         values = [
-            score, status, name, source, phone, email, messenger, city, domain,
-            address, reason,
+            score,
+            status,
+            name,
+            source,
+            phone,
+            email,
+            messenger,
+            city,
+            domain,
+            address,
+            reason,
             int(pagespeed) if pagespeed not in (None, "") else None,
             int(audit_fails) if audit_fails not in (None, "") else None,
             pretty_checks(checks),
-            phone_type, source_url,
+            phone_type,
+            source_url,
             created_at.strftime("%d.%m.%Y %H:%M") if created_at else None,
         ]
 
@@ -120,8 +158,9 @@ def write_sheet(workbook, title: str, rows: list[tuple], highlight_hot: bool) ->
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", default=None)
-    parser.add_argument("--dsn", default=os.environ.get(
-        "LEADGEN_DSN", "postgresql://qorsa:qorsa@localhost:5432/qorsa_leadgen"))
+    parser.add_argument(
+        "--dsn", default=os.environ.get("LEADGEN_DSN", "postgresql://qorsa:qorsa@localhost:5432/qorsa_leadgen")
+    )
     args = parser.parse_args()
 
     rows = fetch_rows(args.dsn)
@@ -134,8 +173,7 @@ def main() -> None:
     write_sheet(workbook, "QUALIFIED", qualified, highlight_hot=False)
     write_sheet(workbook, "Все лиды", rows, highlight_hot=True)
 
-    out = Path(args.out) if args.out else Path(
-        f"leads_{datetime.now():%Y-%m-%d_%H%M}.xlsx")
+    out = Path(args.out) if args.out else Path(f"leads_{datetime.now():%Y-%m-%d_%H%M}.xlsx")
     workbook.save(out)
 
     print(f"Готово: {out.resolve()}")

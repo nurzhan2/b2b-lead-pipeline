@@ -7,7 +7,7 @@ anything it already has cached. Both are asserted directly (recorded sleeps,
 recorded get_entity calls) rather than inferred.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from telethon.errors import ChannelPrivateError, FloodWaitError
@@ -25,7 +25,7 @@ from workers.telegram_monitor.resolver import ChannelResolver, ResolvedChannel
 
 
 def iso_days_ago(days: float) -> str:
-    return (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    return (datetime.now(UTC) - timedelta(days=days)).isoformat()
 
 
 def _channel(channel_id: int, access_hash: int = 777, title: str = "Канал") -> Channel:
@@ -121,7 +121,8 @@ async def test_cached_channels_are_not_resolved_again(settings, tmp_path, slept)
     client = _FakeClient()
 
     outcome = await ChannelResolver(client, settings, cache).resolve(
-        [ChannelEntry(username="fordev"), ChannelEntry(username="jsdevjob")])
+        [ChannelEntry(username="fordev"), ChannelEntry(username="jsdevjob")]
+    )
 
     # This is the whole point of the change.
     assert client.resolve_calls == []
@@ -139,7 +140,8 @@ async def test_only_the_uncached_channel_is_resolved(settings, tmp_path, slept):
     client = _FakeClient(entities={"fresh": entity}, dialogs=[entity])
 
     outcome = await ChannelResolver(client, settings, cache).resolve(
-        [ChannelEntry(username="cached"), ChannelEntry(username="fresh")])
+        [ChannelEntry(username="cached"), ChannelEntry(username="fresh")]
+    )
 
     assert client.resolve_calls == ["fresh"]
     assert outcome.from_cache == 1
@@ -251,7 +253,8 @@ async def test_public_channel_we_are_not_a_member_of_is_skipped(settings, tmp_pa
     )
 
     outcome = await ChannelResolver(client, settings, cache).resolve(
-        [ChannelEntry(username="joined"), ChannelEntry(username="lurking")])
+        [ChannelEntry(username="joined"), ChannelEntry(username="lurking")]
+    )
 
     assert [c.key for c in outcome.channels] == ["joined"]
     assert outcome.not_joined == 1
@@ -341,7 +344,8 @@ async def test_flood_wait_over_the_ceiling_stops_resolving_and_keeps_progress(se
     client.get_entity = floods_hard_on_second
 
     outcome = await ChannelResolver(client, settings, cache).resolve(
-        [ChannelEntry(username="first"), ChannelEntry(username="second"), ChannelEntry(username="third")])
+        [ChannelEntry(username="first"), ChannelEntry(username="second"), ChannelEntry(username="third")]
+    )
 
     # Stopped rather than blocking the worker for an hour...
     assert outcome.aborted_reason is not None
@@ -371,7 +375,8 @@ async def test_progress_before_an_abort_is_saved_to_disk(settings, tmp_path, sle
     client.get_entity = floods_hard_on_second
 
     await ChannelResolver(client, settings, cache).resolve(
-        [ChannelEntry(username="first"), ChannelEntry(username="second")])
+        [ChannelEntry(username="first"), ChannelEntry(username="second")]
+    )
 
     from workers.telegram_monitor.channel_cache import load_cache
 
@@ -412,7 +417,8 @@ async def test_pauses_between_consecutive_resolves(settings, tmp_path, slept):
     client = _FakeClient(entities={"a": a, "b": b, "c": c}, dialogs=[a, b, c])
 
     await ChannelResolver(client, settings, cache).resolve(
-        [ChannelEntry(username="a"), ChannelEntry(username="b"), ChannelEntry(username="c")])
+        [ChannelEntry(username="a"), ChannelEntry(username="b"), ChannelEntry(username="c")]
+    )
 
     # Three resolves => two gaps between them (no pointless pause up front).
     assert slept.count(2.0) == 2
@@ -428,11 +434,13 @@ async def test_summary_line_reports_monitored_and_skipped_counts(settings, tmp_p
     lurking = _channel(2)
     client = _FakeClient(entities={"joined": joined, "lurking": lurking}, dialogs=[joined])
 
-    outcome = await ChannelResolver(client, settings, cache).resolve([
-        ChannelEntry(username="joined"),
-        ChannelEntry(username="lurking"),
-        ChannelEntry(username="gone"),
-    ])
+    outcome = await ChannelResolver(client, settings, cache).resolve(
+        [
+            ChannelEntry(username="joined"),
+            ChannelEntry(username="lurking"),
+            ChannelEntry(username="gone"),
+        ]
+    )
 
     summary = outcome.summary_line()
 

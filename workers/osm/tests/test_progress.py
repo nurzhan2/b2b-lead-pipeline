@@ -71,8 +71,10 @@ def test_pending_preserves_grid_order(tmp_path):
 
     # City-major: one city's categories are crawled together.
     assert pending == [
-        ("Москва", "Кафе"), ("Москва", "Аптеки"),
-        ("Казань", "Кафе"), ("Казань", "Аптеки"),
+        ("Москва", "Кафе"),
+        ("Москва", "Аптеки"),
+        ("Казань", "Кафе"),
+        ("Казань", "Аптеки"),
     ]
 
 

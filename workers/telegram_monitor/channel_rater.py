@@ -84,9 +84,7 @@ class ChannelRater:
         rating = ChannelRating(identifier=channel.key, subscribed=True)
 
         try:
-            async for message in self._client.iter_messages(
-                channel.to_input_peer(), limit=self._settings.rate_sample
-            ):
+            async for message in self._client.iter_messages(channel.to_input_peer(), limit=self._settings.rate_sample):
                 text = message.raw_text or ""
                 rating.total_posts += 1
                 result = self._matcher.match(text)
@@ -146,7 +144,7 @@ def skipped_ratings(entries, cache) -> list[ChannelRating]:
 def print_report(ratings: list[ChannelRating]) -> None:
     columns = ("канал", "подписан", "total", "orders", "hiring", "noise", "rate%", "вердикт")
     widths = (30, 9, 6, 7, 7, 6, 7, 10)
-    header = "  ".join(col.ljust(w) for col, w in zip(columns, widths))
+    header = "  ".join(col.ljust(w) for col, w in zip(columns, widths, strict=True))
     print(header)
     print("-" * len(header))
     for rating in sorted(ratings, key=lambda r: r.order_rate, reverse=True):
@@ -173,17 +171,19 @@ def write_csv_report(path, ratings: list[ChannelRating]) -> None:
             ["username", "подписан", "total", "orders", "hiring", "noise", "order_rate%", "вердикт", "причина"]
         )
         for rating in ratings:
-            writer.writerow([
-                rating.identifier,
-                "да" if rating.subscribed else "нет",
-                rating.total_posts,
-                rating.orders,
-                rating.hiring,
-                rating.noise,
-                f"{rating.order_rate * 100:.1f}",
-                rating.verdict,
-                rating.skip_reason or "",
-            ])
+            writer.writerow(
+                [
+                    rating.identifier,
+                    "да" if rating.subscribed else "нет",
+                    rating.total_posts,
+                    rating.orders,
+                    rating.hiring,
+                    rating.noise,
+                    f"{rating.order_rate * 100:.1f}",
+                    rating.verdict,
+                    rating.skip_reason or "",
+                ]
+            )
 
 
 def _configure_logging(level_name: str) -> None:

@@ -94,8 +94,9 @@ async def test_retries_past_429_then_succeeds():
 
     transport = httpx.MockTransport(handler)
     async with httpx.AsyncClient(transport=transport) as http_client:
-        client = OverpassClient(http_client, user_agent="test-agent", request_delay_seconds=0,
-                                page_size=10, **FAST_RETRY)
+        client = OverpassClient(
+            http_client, user_agent="test-agent", request_delay_seconds=0, page_size=10, **FAST_RETRY
+        )
         elements = await client.fetch_elements((55.5, 37.3, 55.9, 37.8), "amenity", "cafe")
 
     assert attempts["n"] == 3
@@ -114,8 +115,9 @@ async def test_retries_past_504_gateway_timeout():
 
     transport = httpx.MockTransport(handler)
     async with httpx.AsyncClient(transport=transport) as http_client:
-        client = OverpassClient(http_client, user_agent="test-agent", request_delay_seconds=0,
-                                page_size=10, **FAST_RETRY)
+        client = OverpassClient(
+            http_client, user_agent="test-agent", request_delay_seconds=0, page_size=10, **FAST_RETRY
+        )
         elements = await client.fetch_elements((55.5, 37.3, 55.9, 37.8), "amenity", "cafe")
 
     assert attempts["n"] == 2
@@ -132,8 +134,9 @@ async def test_does_not_retry_on_non_retryable_4xx():
 
     transport = httpx.MockTransport(handler)
     async with httpx.AsyncClient(transport=transport) as http_client:
-        client = OverpassClient(http_client, user_agent="test-agent", request_delay_seconds=0,
-                                page_size=10, **FAST_RETRY)
+        client = OverpassClient(
+            http_client, user_agent="test-agent", request_delay_seconds=0, page_size=10, **FAST_RETRY
+        )
         elements = await client.fetch_elements((55.5, 37.3, 55.9, 37.8), "amenity", "cafe")
 
     assert attempts["n"] == 1

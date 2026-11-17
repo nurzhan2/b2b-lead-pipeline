@@ -4,7 +4,7 @@ channel_cache.json.
 """
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -24,7 +24,7 @@ from workers.telegram_monitor.channel_cache import (
 
 
 def iso_days_ago(days: float) -> str:
-    return (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    return (datetime.now(UTC) - timedelta(days=days)).isoformat()
 
 
 # --- normalize_key ---------------------------------------------------------
@@ -91,8 +91,8 @@ def test_negative_statuses_also_expire_rather_than_being_permanent():
     [
         None,
         {},
-        {"status": "ok"},                                  # no resolved_at
-        {"status": "ok", "resolved_at": "not-a-date"},     # unparseable
+        {"status": "ok"},  # no resolved_at
+        {"status": "ok", "resolved_at": "not-a-date"},  # unparseable
         {"status": "weird", "resolved_at": iso_days_ago(1)},  # unknown status
         "not-a-dict",
     ],

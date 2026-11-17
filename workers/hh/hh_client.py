@@ -102,8 +102,7 @@ class HhClient:
     async def _get(self, path: str, params: dict | None = None) -> dict:
         retryer = AsyncRetrying(
             retry=retry_if_exception_type((HhRateLimitError, HhServerError, httpx.TransportError)),
-            wait=wait_exponential(multiplier=self._retry_base, min=self._retry_base,
-                                  max=self._retry_max),
+            wait=wait_exponential(multiplier=self._retry_base, min=self._retry_base, max=self._retry_max),
             stop=stop_after_attempt(self._retry_attempts),
             reraise=True,
         )
@@ -112,8 +111,7 @@ class HhClient:
     async def _get_once(self, path: str, params: dict | None) -> dict:
         url = f"{self._base_url}{path}"
         try:
-            response = await self._client.get(
-                url, params=params, headers=self._headers(), timeout=self._timeout)
+            response = await self._client.get(url, params=params, headers=self._headers(), timeout=self._timeout)
             self.requests_made += 1
         finally:
             # Pause regardless of outcome - pacing is about the rate of
@@ -128,11 +126,10 @@ class HhClient:
         if status in (401, 403):
             # Retrying will not fix credentials, and hammering an endpoint
             # that just refused us is exactly what gets an IP blocked.
-            log.error("hh.forbidden", path=path, status=status,
-                      body=response.text[:200], has_token=self.has_token)
+            log.error("hh.forbidden", path=path, status=status, body=response.text[:200], has_token=self.has_token)
             raise HhAuthError(
-                f"{status} from HH - set HH_TOKEN (see README 'Доступ к API'); body: "
-                f"{response.text[:160]}")
+                f"{status} from HH - set HH_TOKEN (see README 'Доступ к API'); body: {response.text[:160]}"
+            )
         if status >= 500:
             log.warning("hh.server_error", path=path, status=status)
             raise HhServerError(f"{status} from HH")
@@ -145,16 +142,19 @@ class HhClient:
     async def search_vacancies(self, text: str, area: str, page: int = 0) -> dict:
         """One page of GET /vacancies. Returns the raw payload
         ({found, pages, page, per_page, items}) - parsing stays in mapper.py."""
-        return await self._get("/vacancies", {
-            "text": text,
-            "area": area,
-            "page": page,
-            "per_page": self._per_page,
-            # Oldest-first would be ideal for stale hunting, but HH offers
-            # only publication_time (newest first). Staleness is computed
-            # locally from published_at instead - see staleness.py.
-            "order_by": "publication_time",
-        })
+        return await self._get(
+            "/vacancies",
+            {
+                "text": text,
+                "area": area,
+                "page": page,
+                "per_page": self._per_page,
+                # Oldest-first would be ideal for stale hunting, but HH offers
+                # only publication_time (newest first). Staleness is computed
+                # locally from published_at instead - see staleness.py.
+                "order_by": "publication_time",
+            },
+        )
 
     async def iter_vacancies(self, text: str, area: str, max_pages: int) -> list[dict]:
         """Walks pages for one (keyword, area) pair, stopping at whichever
@@ -168,9 +168,14 @@ class HhClient:
         collected: list[dict] = []
         ceiling = min(max_pages, max_page(self._per_page) + 1)
         if ceiling < max_pages:
-            log.debug("hh.depth_capped", text=text, area=area,
-                      requested_pages=max_pages, allowed_pages=ceiling,
-                      reason=f"HH caps result depth at {MAX_RESULT_DEPTH}")
+            log.debug(
+                "hh.depth_capped",
+                text=text,
+                area=area,
+                requested_pages=max_pages,
+                allowed_pages=ceiling,
+                reason=f"HH caps result depth at {MAX_RESULT_DEPTH}",
+            )
 
         for page in range(ceiling):
             try:
@@ -184,8 +189,9 @@ class HhClient:
             items = payload.get("items") or []
             collected.extend(items)
             if page == 0:
-                log.debug("hh.query_start", text=text, area=area,
-                          found=payload.get("found"), pages=payload.get("pages"))
+                log.debug(
+                    "hh.query_start", text=text, area=area, found=payload.get("found"), pages=payload.get("pages")
+                )
             if not items:
                 break
             total_pages = payload.get("pages")

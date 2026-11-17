@@ -46,8 +46,7 @@ def contact_name(lead: dict) -> str | None:
     return (f"{post} {ceo}" if post else ceo)[:MAX_NAME_LENGTH]
 
 
-def build_lead_payload(lead: dict, *, pipeline_id: int | None,
-                       status_id: int | None, tag: str) -> dict:
+def build_lead_payload(lead: dict, *, pipeline_id: int | None, status_id: int | None, tag: str) -> dict:
     payload: dict = {"name": deal_name(lead)}
     if pipeline_id:
         payload["pipeline_id"] = pipeline_id
@@ -74,12 +73,10 @@ def build_contact_payload(lead: dict, amo_lead_id: int) -> dict | None:
         # The core stores several numbers separated by "; " - amoCRM takes
         # them as separate values on the same field, which is how a CRM user
         # expects to see them.
-        values = [{"value": part.strip(), "enum_code": "WORK"}
-                  for part in phone.split(";") if part.strip()]
+        values = [{"value": part.strip(), "enum_code": "WORK"} for part in phone.split(";") if part.strip()]
         custom_fields.append({"field_code": FIELD_PHONE, "values": values})
     if email:
-        custom_fields.append({"field_code": FIELD_EMAIL,
-                              "values": [{"value": email, "enum_code": "WORK"}]})
+        custom_fields.append({"field_code": FIELD_EMAIL, "values": [{"value": email, "enum_code": "WORK"}]})
 
     payload: dict = {
         "name": name or (lead.get("name") or "Контакт")[:MAX_NAME_LENGTH],

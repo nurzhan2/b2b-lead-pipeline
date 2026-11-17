@@ -21,7 +21,7 @@ testable and lets `--report` run without a Telegram session:
 import argparse
 import json
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import structlog
@@ -60,7 +60,7 @@ def normalize_key(target) -> str:
 
 
 def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def make_entry(
@@ -94,7 +94,7 @@ def _parse_timestamp(value) -> datetime | None:
     # A timestamp written by an older/hand-edited file may be naive; treat it
     # as UTC rather than crashing on an offset-naive/aware comparison.
     if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=timezone.utc)
+        return parsed.replace(tzinfo=UTC)
     return parsed
 
 
@@ -114,7 +114,7 @@ def is_stale(entry: dict | None, ttl_days: float = DEFAULT_TTL_DAYS) -> bool:
         return True
     if ttl_days <= 0:
         return True
-    return datetime.now(timezone.utc) - resolved_at > timedelta(days=ttl_days)
+    return datetime.now(UTC) - resolved_at > timedelta(days=ttl_days)
 
 
 class ChannelCache:
@@ -202,7 +202,7 @@ def _age_label(entry: dict) -> str:
     resolved_at = _parse_timestamp(entry.get("resolved_at"))
     if resolved_at is None:
         return "?"
-    days = (datetime.now(timezone.utc) - resolved_at).days
+    days = (datetime.now(UTC) - resolved_at).days
     if days <= 0:
         return "today"
     return f"{days}d ago"
@@ -214,13 +214,15 @@ def build_report_rows(cache: ChannelCache) -> list[tuple[str, str, str, str, str
     order = {STATUS_NOT_FOUND: 0, STATUS_NOT_JOINED: 1, STATUS_OK: 2}
     rows = []
     for username, entry in cache.entries.items():
-        rows.append((
-            username,
-            str(entry.get("status") or "?"),
-            str(entry.get("resolved_at") or "?")[:19],
-            _age_label(entry),
-            str(entry.get("title") or ""),
-        ))
+        rows.append(
+            (
+                username,
+                str(entry.get("status") or "?"),
+                str(entry.get("resolved_at") or "?")[:19],
+                _age_label(entry),
+                str(entry.get("title") or ""),
+            )
+        )
     rows.sort(key=lambda r: (order.get(r[1], 3), r[0]))
     return rows
 
@@ -235,13 +237,10 @@ def render_report(cache: ChannelCache) -> str:
 
     rows = build_report_rows(cache)
     headers = ("username", "status", "resolved_at", "age", "title")
-    widths = [
-        max(len(headers[i]), max((len(r[i]) for r in rows), default=0))
-        for i in range(len(headers))
-    ]
+    widths = [max(len(headers[i]), max((len(r[i]) for r in rows), default=0)) for i in range(len(headers))]
     widths[4] = min(widths[4], 40)
 
-    lines = ["  ".join(h.ljust(w) for h, w in zip(headers, widths))]
+    lines = ["  ".join(h.ljust(w) for h, w in zip(headers, widths, strict=True))]
     lines.append("-" * (sum(widths) + 2 * (len(widths) - 1)))
     for row in rows:
         cells = [row[i].ljust(widths[i]) for i in range(4)]
@@ -261,9 +260,7 @@ def render_report(cache: ChannelCache) -> str:
         lines.append(f"  {status:<12} {STATUS_EXPLANATIONS[status]}")
     lines.append("")
     lines.append(f"Cache file: {cache.path}")
-    lines.append(
-        "Re-resolve everything with FORCE_RESOLVE=true, or by deleting the file above."
-    )
+    lines.append("Re-resolve everything with FORCE_RESOLVE=true, or by deleting the file above.")
     return "\n".join(lines)
 
 

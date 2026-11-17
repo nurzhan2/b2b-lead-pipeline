@@ -22,11 +22,21 @@ async def test_fetch_pending_sends_the_limit_and_parses_companies():
     def handler(request):
         seen["path"] = request.url.path
         seen["params"] = dict(request.url.params)
-        return httpx.Response(200, json=[{
-            "id": "7f3c3c2e-0000-4000-8000-000000000001", "name": "Ромашка", "domain": "romashka.kz",
-            "email": None, "phone": "+77273551020", "messenger": None, "city": "Алматы",
-            "somethingNew": "ignored",
-        }])
+        return httpx.Response(
+            200,
+            json=[
+                {
+                    "id": "7f3c3c2e-0000-4000-8000-000000000001",
+                    "name": "Ромашка",
+                    "domain": "romashka.kz",
+                    "email": None,
+                    "phone": "+77273551020",
+                    "messenger": None,
+                    "city": "Алматы",
+                    "somethingNew": "ignored",
+                }
+            ],
+        )
 
     http_client, core = make(handler)
     async with http_client:
@@ -50,12 +60,16 @@ async def test_patch_sends_camel_case_and_leaves_out_empty_fields():
 
     http_client, core = make(handler)
     async with http_client:
-        ok = await core.patch_contacts("c-1", ContactsPatch(email="info@romashka.kz",
-                                                            enrich_notes="email с /kontakty/"))
+        ok = await core.patch_contacts(
+            "c-1", ContactsPatch(email="info@romashka.kz", enrich_notes="email с /kontakty/")
+        )
 
     assert ok is True
-    assert seen == {"method": "PATCH", "path": "/api/v1/companies/c-1/contacts",
-                    "body": {"email": "info@romashka.kz", "enrichNotes": "email с /kontakty/"}}
+    assert seen == {
+        "method": "PATCH",
+        "path": "/api/v1/companies/c-1/contacts",
+        "body": {"email": "info@romashka.kz", "enrichNotes": "email с /kontakty/"},
+    }
 
 
 @pytest.mark.asyncio

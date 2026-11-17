@@ -3,7 +3,7 @@ no network. This is where the pieces meet: filter -> group -> details ->
 map -> send.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -54,22 +54,26 @@ KEYWORDS = ["веб-разработчик"]
 
 
 def settings(**over):
-    base = dict(hh_token="t", target_per_day=1000, fetch_employer_details=False,
-                stale_days=45, max_pages_per_query=1)
+    base = dict(hh_token="t", target_per_day=1000, fetch_employer_details=False, stale_days=45, max_pages_per_query=1)
     base.update(over)
     return Settings(**base)
 
 
 def _days_ago(days: int) -> str:
     """HH-style timestamp relative to today, so freshness never expires."""
-    return (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S+0000")
+    return (datetime.now(UTC) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S+0000")
 
 
 def build(hh, core=None, cfg=None, keywords=None, areas=None):
     cfg = cfg or settings()
-    return HhRunner(cfg, keywords or KEYWORDS, areas or AREAS, hh, core or FakeCore(),
-                    EmployerFilter(cfg.agencies, cfg.giants,
-                                   cfg.skipped_employer_types, cfg.skip_accredited_it))
+    return HhRunner(
+        cfg,
+        keywords or KEYWORDS,
+        areas or AREAS,
+        hh,
+        core or FakeCore(),
+        EmployerFilter(cfg.agencies, cfg.giants, cfg.skipped_employer_types, cfg.skip_accredited_it),
+    )
 
 
 # --- the happy path -------------------------------------------------------
@@ -94,8 +98,7 @@ async def test_collects_and_sends_a_lead():
 async def test_queries_every_keyword_area_pair():
     hh = FakeHh(default=[])
     cfg = settings()
-    runner = HhRunner(cfg, ["a", "b"], [Area(name="М", id="1"), Area(name="СПб", id="2")],
-                      hh, FakeCore())
+    runner = HhRunner(cfg, ["a", "b"], [Area(name="М", id="1"), Area(name="СПб", id="2")], hh, FakeCore())
 
     await runner.run_once()
 
@@ -107,10 +110,7 @@ async def test_queries_every_keyword_area_pair():
 
 @pytest.mark.asyncio
 async def test_one_company_with_five_vacancies_is_sent_once():
-    hh = FakeHh(default=[
-        vacancy(vacancy_id=str(i), employer_id="100", employer_name="ООО Ромашка")
-        for i in range(5)
-    ])
+    hh = FakeHh(default=[vacancy(vacancy_id=str(i), employer_id="100", employer_name="ООО Ромашка") for i in range(5)])
     core = FakeCore()
 
     summary = await build(hh, core).run_once()
@@ -123,10 +123,12 @@ async def test_one_company_with_five_vacancies_is_sent_once():
 
 @pytest.mark.asyncio
 async def test_source_url_points_at_the_stalest_vacancy():
-    hh = FakeHh(default=[
-        vacancy(vacancy_id="fresh", employer_id="100", published_at="2026-08-25T10:00:00+0300"),
-        vacancy(vacancy_id="rotten", employer_id="100", published_at="2025-01-10T10:00:00+0300"),
-    ])
+    hh = FakeHh(
+        default=[
+            vacancy(vacancy_id="fresh", employer_id="100", published_at="2026-08-25T10:00:00+0300"),
+            vacancy(vacancy_id="rotten", employer_id="100", published_at="2025-01-10T10:00:00+0300"),
+        ]
+    )
     core = FakeCore()
 
     await build(hh, core).run_once()
@@ -140,11 +142,13 @@ async def test_source_url_points_at_the_stalest_vacancy():
 
 @pytest.mark.asyncio
 async def test_agencies_and_giants_are_filtered_out():
-    hh = FakeHh(default=[
-        vacancy(vacancy_id="1", employer_id="1", employer_name="ООО Ромашка"),
-        vacancy(vacancy_id="2", employer_id="2", employer_name="Кадровое агентство Профи"),
-        vacancy(vacancy_id="3", employer_id="3", employer_name="Сбербанк"),
-    ])
+    hh = FakeHh(
+        default=[
+            vacancy(vacancy_id="1", employer_id="1", employer_name="ООО Ромашка"),
+            vacancy(vacancy_id="2", employer_id="2", employer_name="Кадровое агентство Профи"),
+            vacancy(vacancy_id="3", employer_id="3", employer_name="Сбербанк"),
+        ]
+    )
     core = FakeCore()
 
     summary = await build(hh, core).run_once()
@@ -158,11 +162,12 @@ async def test_agencies_and_giants_are_filtered_out():
 @pytest.mark.asyncio
 async def test_it_accredited_employers_are_filtered_from_the_search_result():
     """No extra request needed - the flag is on the search item itself."""
-    hh = FakeHh(default=[
-        vacancy(vacancy_id="1", employer_id="1", employer_name="ООО Ромашка"),
-        vacancy(vacancy_id="2", employer_id="2", employer_name="ООО Технологии",
-                accredited_it=True),
-    ])
+    hh = FakeHh(
+        default=[
+            vacancy(vacancy_id="1", employer_id="1", employer_name="ООО Ромашка"),
+            vacancy(vacancy_id="2", employer_id="2", employer_name="ООО Технологии", accredited_it=True),
+        ]
+    )
 
     summary = await build(hh).run_once()
 
@@ -194,8 +199,11 @@ async def test_agency_detected_only_via_hh_employer_type_is_dropped_late():
 async def test_employer_details_fill_in_the_domain():
     hh = FakeHh(
         default=[vacancy(employer_id="100", employer_name="ООО Ромашка")],
-        employers={"100": dict(EMPLOYER_DETAIL, id="100", name="ООО Ромашка",
-                               type="company", site_url="https://www.romashka.ru/")},
+        employers={
+            "100": dict(
+                EMPLOYER_DETAIL, id="100", name="ООО Ромашка", type="company", site_url="https://www.romashka.ru/"
+            )
+        },
     )
     core = FakeCore()
 
@@ -222,8 +230,7 @@ async def test_details_are_fetched_once_per_employer_not_per_vacancy():
 
 @pytest.mark.asyncio
 async def test_details_can_be_switched_off_entirely():
-    hh = FakeHh(default=[vacancy(employer_id="100")],
-                employers={"100": EMPLOYER_DETAIL})
+    hh = FakeHh(default=[vacancy(employer_id="100")], employers={"100": EMPLOYER_DETAIL})
     core = FakeCore()
 
     await build(hh, core, cfg=settings(fetch_employer_details=False)).run_once()
@@ -240,8 +247,7 @@ async def test_detail_fetches_are_capped():
         employers={str(i): dict(EMPLOYER_DETAIL, id=str(i), type="company") for i in range(10)},
     )
 
-    summary = await build(hh, cfg=settings(fetch_employer_details=True,
-                                           max_employer_details=3)).run_once()
+    summary = await build(hh, cfg=settings(fetch_employer_details=True, max_employer_details=3)).run_once()
 
     assert summary["employer_details_fetched"] == 3
     assert summary["sent"] == 10  # the rest still ship, just without a domain
@@ -264,10 +270,12 @@ async def test_target_per_day_caps_the_run():
 @pytest.mark.asyncio
 async def test_stalest_employers_are_sent_first_when_the_run_is_truncated():
     """If TARGET_PER_DAY cuts the batch, it must cut the COLDEST leads."""
-    hh = FakeHh(default=[
-        vacancy(vacancy_id="fresh", employer_id="1", published_at="2026-08-29T10:00:00+0300"),
-        vacancy(vacancy_id="old", employer_id="2", published_at="2024-01-01T10:00:00+0300"),
-    ])
+    hh = FakeHh(
+        default=[
+            vacancy(vacancy_id="fresh", employer_id="1", published_at="2026-08-29T10:00:00+0300"),
+            vacancy(vacancy_id="old", employer_id="2", published_at="2024-01-01T10:00:00+0300"),
+        ]
+    )
     core = FakeCore()
 
     await build(hh, core, cfg=settings(target_per_day=1)).run_once()
@@ -281,8 +289,7 @@ async def test_an_auth_error_aborts_the_run_instead_of_grinding_through_the_grid
     hh = FakeHh(auth_error=True)
     core = FakeCore()
     cfg = settings()
-    runner = HhRunner(cfg, ["a", "b", "c"], [Area(name="М", id="1"), Area(name="СПб", id="2")],
-                      hh, core)
+    runner = HhRunner(cfg, ["a", "b", "c"], [Area(name="М", id="1"), Area(name="СПб", id="2")], hh, core)
 
     summary = await runner.run_once()
 
@@ -306,12 +313,17 @@ async def test_vacancies_without_an_employer_id_are_counted_and_skipped():
 
 @pytest.mark.asyncio
 async def test_statistics_report_stale_and_salary_counts():
-    hh = FakeHh(default=[
-        vacancy(vacancy_id="1", employer_id="1", published_at="2024-01-01T10:00:00+0300",
-                salary={"from": 100000, "to": None, "currency": "RUR"}),
-        vacancy(vacancy_id="2", employer_id="2", published_at=_days_ago(1),
-                salary=None),
-    ])
+    hh = FakeHh(
+        default=[
+            vacancy(
+                vacancy_id="1",
+                employer_id="1",
+                published_at="2024-01-01T10:00:00+0300",
+                salary={"from": 100000, "to": None, "currency": "RUR"},
+            ),
+            vacancy(vacancy_id="2", employer_id="2", published_at=_days_ago(1), salary=None),
+        ]
+    )
 
     summary = await build(hh).run_once()
 

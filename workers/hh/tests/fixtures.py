@@ -59,11 +59,9 @@ VACANCY_ITEM = {
     "archived": False,
     "working_days": [{"id": "only_saturday_and_sunday", "name": "Работа только по сб и вс"}],
     "working_time_intervals": [
-        {"id": "from_four_to_six_hours_in_a_day",
-         "name": "Можно работать сменами по 4-6 часов в день"}
+        {"id": "from_four_to_six_hours_in_a_day", "name": "Можно работать сменами по 4-6 часов в день"}
     ],
-    "working_time_modes": [{"id": "start_after_sixteen",
-                            "name": "Можно начинать работать после 16-00"}],
+    "working_time_modes": [{"id": "start_after_sixteen", "name": "Можно начинать работать после 16-00"}],
     "accept_temporary": False,
     "experience": {"id": "noExperience", "name": "Нет опыта"},
     "employment": {"id": "full", "name": "Полная занятость"},

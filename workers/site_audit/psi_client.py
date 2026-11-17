@@ -24,8 +24,13 @@ class PageSpeedUnavailable(Exception):
 
 
 class PageSpeedClient:
-    def __init__(self, api_key: str, strategy: str = "mobile",
-                 timeout_seconds: float = 90.0, client: httpx.AsyncClient | None = None):
+    def __init__(
+        self,
+        api_key: str,
+        strategy: str = "mobile",
+        timeout_seconds: float = 90.0,
+        client: httpx.AsyncClient | None = None,
+    ):
         self._api_key = api_key
         self._strategy = strategy
         self._timeout = timeout_seconds

@@ -45,7 +45,7 @@ MAX_MESSENGER_LENGTH = 255
 class EnrichOutcome:
     status: str
     email: str | None = None
-    phone: str | None = None        # "+7...; +7..." - the core's PhoneUtil picks the one to call
+    phone: str | None = None  # "+7...; +7..." - the core's PhoneUtil picks the one to call
     messenger: str | None = None
     notes: str = ""
     pages_fetched: int = 0
@@ -113,8 +113,9 @@ class SiteEnricher:
 
         # Only look for what the company is missing: the core would ignore
         # the rest anyway, and the notes should describe what was applied.
-        needs = _Needs(email=not _has(company.email), phone=not _has(company.phone),
-                       messenger=not _has(company.messenger))
+        needs = _Needs(
+            email=not _has(company.email), phone=not _has(company.phone), messenger=not _has(company.messenger)
+        )
 
         try:
             home = await self._fetch_home(host)
@@ -128,8 +129,9 @@ class SiteEnricher:
         if home.status >= 400:
             return EnrichOutcome(UNAVAILABLE, notes=f"главная ответила HTTP {home.status}", pages_fetched=1)
         if home.html is None:
-            return EnrichOutcome(NOTHING_FOUND, pages_fetched=1,
-                                 notes=f"главная — не HTML ({home.content_type or 'тип не указан'})")
+            return EnrichOutcome(
+                NOTHING_FOUND, pages_fetched=1, notes=f"главная — не HTML ({home.content_type or 'тип не указан'})"
+            )
 
         site_host = urlsplit(home.url).hostname or host
         own_bases = {base_domain(host), base_domain(site_host)}
@@ -167,8 +169,9 @@ class SiteEnricher:
             except SiteUnavailable as http_error:
                 raise SiteUnavailable(f"https — {https_error}; http — {http_error}") from http_error
 
-    def _outcome(self, collected: _Collected, needs: _Needs, own_bases: set[str], site_host: str,
-                 pages: int, robots_closed: int) -> EnrichOutcome:
+    def _outcome(
+        self, collected: _Collected, needs: _Needs, own_bases: set[str], site_host: str, pages: int, robots_closed: int
+    ) -> EnrichOutcome:
         ranked = rank_emails(collected.emails, own_bases) if needs.email else []
         best = ranked[0] if ranked else None
         phones = collected.phones[: self._max_phones] if needs.phone else []

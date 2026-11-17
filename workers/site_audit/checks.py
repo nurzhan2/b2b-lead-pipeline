@@ -47,9 +47,15 @@ class ProbeResult:
     domain, not a bad site).
     """
 
-    def __init__(self, reachable: bool, failed: list[str], final_url: str | None = None,
-                 elapsed_seconds: float | None = None, page_bytes: int | None = None,
-                 note: str | None = None):
+    def __init__(
+        self,
+        reachable: bool,
+        failed: list[str],
+        final_url: str | None = None,
+        elapsed_seconds: float | None = None,
+        page_bytes: int | None = None,
+        note: str | None = None,
+    ):
         self.reachable = reachable
         self.failed = failed
         self.final_url = final_url
@@ -62,11 +68,15 @@ class ProbeResult:
         return len(self.failed)
 
 
-async def probe_site(client: httpx.AsyncClient, domain: str, *,
-                     timeout_seconds: float = 15.0,
-                     slow_response_seconds: float = 3.0,
-                     heavy_page_bytes: int = 2_000_000,
-                     max_page_bytes: int = 3_000_000) -> ProbeResult:
+async def probe_site(
+    client: httpx.AsyncClient,
+    domain: str,
+    *,
+    timeout_seconds: float = 15.0,
+    slow_response_seconds: float = 3.0,
+    heavy_page_bytes: int = 2_000_000,
+    max_page_bytes: int = 3_000_000,
+) -> ProbeResult:
     """Fetches the homepage once over https (falling back to http) and runs
     every check against that single response. One request per site: this is a
     scoring signal, not a crawl."""
@@ -79,8 +89,7 @@ async def probe_site(client: httpx.AsyncClient, domain: str, *,
 
     started = time.monotonic()
     try:
-        response = await client.get(f"https://{domain}/", timeout=timeout_seconds,
-                                    follow_redirects=True)
+        response = await client.get(f"https://{domain}/", timeout=timeout_seconds, follow_redirects=True)
         https_ok = True
     except ssl.SSLError as exc:
         failed.append(BAD_CERT)
@@ -92,8 +101,7 @@ async def probe_site(client: httpx.AsyncClient, domain: str, *,
         # No https at all - try plain http. A site that only answers on http
         # in 2026 is a finding in itself, not a fallback.
         try:
-            response = await client.get(f"http://{domain}/", timeout=timeout_seconds,
-                                        follow_redirects=True)
+            response = await client.get(f"http://{domain}/", timeout=timeout_seconds, follow_redirects=True)
             if BAD_CERT not in failed:
                 failed.append(NO_HTTPS)
         except httpx.TransportError as exc:
@@ -103,9 +111,7 @@ async def probe_site(client: httpx.AsyncClient, domain: str, *,
     elapsed = time.monotonic() - started
 
     if response.status_code >= 400:
-        return ProbeResult(False, [UNREACHABLE],
-                           final_url=str(response.url),
-                           note=f"HTTP {response.status_code}")
+        return ProbeResult(False, [UNREACHABLE], final_url=str(response.url), note=f"HTTP {response.status_code}")
 
     # http that never lands on https: check the scheme we ended up on, not the
     # one we asked for, so a proper 301 chain passes.
@@ -127,15 +133,25 @@ async def probe_site(client: httpx.AsyncClient, domain: str, *,
         # either way the remaining HTML checks would all fire spuriously, so
         # report it once and stop.
         failed.append(EMPTY_PAGE)
-        return ProbeResult(True, failed, final_url=str(response.url),
-                           elapsed_seconds=elapsed, page_bytes=page_bytes,
-                           note="; ".join(notes)[:400] or None)
+        return ProbeResult(
+            True,
+            failed,
+            final_url=str(response.url),
+            elapsed_seconds=elapsed,
+            page_bytes=page_bytes,
+            note="; ".join(notes)[:400] or None,
+        )
 
     failed.extend(_html_checks(text, str(response.url)))
 
-    return ProbeResult(True, failed, final_url=str(response.url),
-                       elapsed_seconds=elapsed, page_bytes=page_bytes,
-                       note="; ".join(notes)[:400] or None)
+    return ProbeResult(
+        True,
+        failed,
+        final_url=str(response.url),
+        elapsed_seconds=elapsed,
+        page_bytes=page_bytes,
+        note="; ".join(notes)[:400] or None,
+    )
 
 
 def _html_checks(html: str, final_url: str) -> list[str]:

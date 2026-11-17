@@ -88,7 +88,10 @@ class TwoGisClient:
             raise TwoGisRateLimitError(f"429 for {rubric_query!r} region_id={region_id} page {page}")
         if response.status_code >= 500:
             log.warning(
-                "twogis.server_error", query=rubric_query, region_id=region_id, page=page,
+                "twogis.server_error",
+                query=rubric_query,
+                region_id=region_id,
+                page=page,
                 status=response.status_code,
             )
             raise TwoGisServerError(f"{response.status_code} for {rubric_query!r} region_id={region_id} page {page}")
@@ -102,8 +105,7 @@ class TwoGisClient:
                 body=response.text[:300],
             )
             raise TwoGisClientError(
-                f"{response.status_code} for {rubric_query!r} region_id={region_id} page {page}: "
-                f"{response.text[:200]}"
+                f"{response.status_code} for {rubric_query!r} region_id={region_id} page {page}: {response.text[:200]}"
             )
 
         return response.json()

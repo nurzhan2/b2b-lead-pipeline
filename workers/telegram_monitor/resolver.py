@@ -28,8 +28,8 @@ from dataclasses import dataclass, field
 import structlog
 from telethon import utils
 from telethon.errors import (
-    ChannelPrivateError,
     ChannelInvalidError,
+    ChannelPrivateError,
     FloodWaitError,
     UsernameInvalidError,
     UsernameNotOccupiedError,
@@ -199,12 +199,14 @@ class ChannelResolver:
     def _apply(self, outcome: ResolveOutcome, key: str, entry: dict) -> None:
         status = entry.get("status")
         if status == STATUS_OK and entry.get("id") is not None:
-            outcome.channels.append(ResolvedChannel(
-                key=key,
-                peer_id=entry["id"],
-                access_hash=entry.get("access_hash"),
-                title=entry.get("title"),
-            ))
+            outcome.channels.append(
+                ResolvedChannel(
+                    key=key,
+                    peer_id=entry["id"],
+                    access_hash=entry.get("access_hash"),
+                    title=entry.get("title"),
+                )
+            )
         elif status == STATUS_NOT_JOINED:
             outcome.not_joined += 1
         elif status == STATUS_NOT_FOUND:

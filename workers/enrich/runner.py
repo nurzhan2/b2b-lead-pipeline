@@ -16,8 +16,7 @@ log = structlog.get_logger(__name__)
 
 
 class EnrichRunner:
-    def __init__(self, settings, core, enricher,
-                 sleep: Callable[[float], Awaitable[None]] = asyncio.sleep):
+    def __init__(self, settings, core, enricher, sleep: Callable[[float], Awaitable[None]] = asyncio.sleep):
         self._settings = settings
         self._core = core
         self._enricher = enricher
@@ -98,10 +97,18 @@ class EnrichRunner:
                 log.exception("enrich.patch_error", company_id=company.id)
                 patched = False
 
-            log.info("enrich.company_done", company_id=company.id, domain=company.domain,
-                     status=outcome.status, email=bool(outcome.email), phone=bool(outcome.phone),
-                     messenger=bool(outcome.messenger), pages=outcome.pages_fetched,
-                     patched=patched, notes=outcome.notes)
+            log.info(
+                "enrich.company_done",
+                company_id=company.id,
+                domain=company.domain,
+                status=outcome.status,
+                email=bool(outcome.email),
+                phone=bool(outcome.phone),
+                messenger=bool(outcome.messenger),
+                pages=outcome.pages_fetched,
+                patched=patched,
+                notes=outcome.notes,
+            )
             # The pause between sites; held inside the semaphore so the slot
             # stays busy and concurrency really bounds the request rate.
             await self._sleep(self._settings.request_delay_seconds)

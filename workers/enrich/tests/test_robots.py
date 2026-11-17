@@ -83,8 +83,7 @@ def test_consecutive_user_agent_lines_share_one_group():
 
 
 def test_groups_for_the_same_agent_are_merged():
-    r = rules("User-agent: *\nDisallow: /a/\n\nUser-agent: Yandex\nDisallow: /\n\n"
-              "User-agent: *\nDisallow: /b/\n")
+    r = rules("User-agent: *\nDisallow: /a/\n\nUser-agent: Yandex\nDisallow: /\n\nUser-agent: *\nDisallow: /b/\n")
     assert not r.can_fetch("/a/")
     assert not r.can_fetch("/b/")
     assert r.can_fetch("/c/")
@@ -143,8 +142,10 @@ def test_comments_bom_crlf_and_odd_case_are_tolerated():
 
 
 def test_unknown_lines_are_ignored():
-    r = rules("User-agent: *\nSitemap: https://romashka.kz/sitemap.xml\nHost: romashka.kz\n"
-              "Clean-param: utm_source /\nDisallow: /tmp/\n")
+    r = rules(
+        "User-agent: *\nSitemap: https://romashka.kz/sitemap.xml\nHost: romashka.kz\n"
+        "Clean-param: utm_source /\nDisallow: /tmp/\n"
+    )
     assert not r.can_fetch("/tmp/")
     assert r.can_fetch("/")
 

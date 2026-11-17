@@ -102,8 +102,7 @@ class OsmRunner:
         target = self._settings.target_per_day
         for city, category in slice_:
             if stats["sent"] >= target:
-                log.info("osm.target_reached", target=target,
-                         hint="remaining combos stay pending for the next run")
+                log.info("osm.target_reached", target=target, hint="remaining combos stay pending for the next run")
                 break
 
             elements = await self._client.fetch_elements(city.as_tuple, category.key, category.value)
@@ -198,9 +197,10 @@ class OsmRunner:
             rate_limit_hits=self._client.rate_limit_hits,
         )
         if chains_hit:
-            log.info("osm.chains_filtered",
-                     **{name: count for name, count in sorted(
-                         chains_hit.items(), key=lambda kv: kv[1], reverse=True)[:10]})
+            log.info(
+                "osm.chains_filtered",
+                **{name: count for name, count in sorted(chains_hit.items(), key=lambda kv: kv[1], reverse=True)[:10]},
+            )
 
         print(
             f"Обработано {self._progress.done_count}/{total_combos} пар "

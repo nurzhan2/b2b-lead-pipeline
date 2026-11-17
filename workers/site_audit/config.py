@@ -7,10 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 MODULE_DIR = Path(__file__).resolve().parent
 
-DEFAULT_USER_AGENT = (
-    "qorsa-leadgen-audit/1.0 "
-    "(site quality probe; reads the homepage only; respects robots.txt)"
-)
+DEFAULT_USER_AGENT = "qorsa-leadgen-audit/1.0 (site quality probe; reads the homepage only; respects robots.txt)"
 
 
 class Settings(BaseSettings):

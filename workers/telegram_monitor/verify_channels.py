@@ -27,7 +27,6 @@ Usage (from the repo root):
 import argparse
 import asyncio
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -40,19 +39,46 @@ PREVIEW_URL = "https://t.me/s/{username}"
 
 # A client describing work they want done.
 ORDER_MARKERS = (
-    "ищем подрядчика", "нужен исполнитель", "требуется разработать",
-    "нужно разработать", "нужен сайт", "нужен бот", "нужен дизайн",
-    "заказ", "бюджет", "тз", "срок разработки", "оплата за проект",
-    "за проект", "разово", "под ключ", "смета", "стоимость работ",
+    "ищем подрядчика",
+    "нужен исполнитель",
+    "требуется разработать",
+    "нужно разработать",
+    "нужен сайт",
+    "нужен бот",
+    "нужен дизайн",
+    "заказ",
+    "бюджет",
+    "тз",
+    "срок разработки",
+    "оплата за проект",
+    "за проект",
+    "разово",
+    "под ключ",
+    "смета",
+    "стоимость работ",
 )
 
 # An employer hiring a person. matcher.py filters these out, so a channel
 # dominated by them is not worth monitoring.
 VACANCY_MARKERS = (
-    "в штат", "вакансия", "полная занятость", "part-time", "full-time",
-    "оклад", "зарплата", "з/п", "испытательный срок", "дмс",
-    "ищем в команду", "ищем сотрудника", "резюме", "собеседование",
-    "график работы", "офис", "оформление по тк", "тк рф",
+    "в штат",
+    "вакансия",
+    "полная занятость",
+    "part-time",
+    "full-time",
+    "оклад",
+    "зарплата",
+    "з/п",
+    "испытательный срок",
+    "дмс",
+    "ищем в команду",
+    "ищем сотрудника",
+    "резюме",
+    "собеседование",
+    "график работы",
+    "офис",
+    "оформление по тк",
+    "тк рф",
 )
 
 
@@ -67,8 +93,7 @@ async def check_one(client: httpx.AsyncClient, username: str) -> dict:
         "note": None,
     }
     try:
-        response = await client.get(PREVIEW_URL.format(username=username),
-                                    timeout=20.0, follow_redirects=True)
+        response = await client.get(PREVIEW_URL.format(username=username), timeout=20.0, follow_redirects=True)
     except httpx.TransportError as exc:
         result["note"] = f"transport: {exc}"
         return result
@@ -124,13 +149,13 @@ async def main_async(args) -> int:
     entries = data.get("channels") or []
     usernames = [entry["username"] for entry in entries if entry.get("username")]
 
-    print(f"Проверяю {len(usernames)} каналов через t.me/s/ "
-          f"(без Telegram API, FloodWait невозможен)\n", flush=True)
+    print(f"Проверяю {len(usernames)} каналов через t.me/s/ (без Telegram API, FloodWait невозможен)\n", flush=True)
 
     semaphore = asyncio.Semaphore(args.concurrency)
     headers = {"User-Agent": "Mozilla/5.0 (compatible; qorsa-channel-check/1.0)"}
 
     async with httpx.AsyncClient(headers=headers) as client:
+
         async def guarded(username: str) -> dict:
             async with semaphore:
                 row = await check_one(client, username)
@@ -150,29 +175,31 @@ async def main_async(args) -> int:
     print(f"{'канал':<24} {'жив':<5} {'постов':<7} {'заказы':<7} {'вакансии':<9} вердикт")
     print("-" * 72)
     for row in sorted(rows, key=lambda r: (r["verdict"], -r["orders"])):
-        print(f"{row['username']:<24} {'да' if row['alive'] else 'нет':<5} "
-              f"{row['posts']:<7} {row['orders']:<7} {row['vacancies']:<9} {row['verdict']}")
+        print(
+            f"{row['username']:<24} {'да' if row['alive'] else 'нет':<5} "
+            f"{row['posts']:<7} {row['orders']:<7} {row['vacancies']:<9} {row['verdict']}"
+        )
 
-    print(f"\nИТОГО: keep {len(keep)}, review {len(review)}, drop {len(drop)} "
-          f"(из них мёртвых {len(dead)})")
+    print(f"\nИТОГО: keep {len(keep)}, review {len(review)}, drop {len(drop)} (из них мёртвых {len(dead)})")
 
     if args.out:
         out_path = Path(args.out)
-        payload = {"channels": [
-            {"username": r["username"], "title": r["title"],
-             "priority": 1, "category": "verified_orders"}
-            for r in keep
-        ]}
+        payload = {
+            "channels": [
+                {"username": r["username"], "title": r["title"], "priority": 1, "category": "verified_orders"}
+                for r in keep
+            ]
+        }
         out_path.write_text(
             "# Автогенерировано verify_channels.py - только каналы со вердиктом keep.\n"
             "# Проверено через t.me/s/, Telegram API не задействован.\n\n"
             + yaml.safe_dump(payload, allow_unicode=True, sort_keys=False),
-            encoding="utf-8")
+            encoding="utf-8",
+        )
         print(f"Список keep записан в {out_path}")
 
     if args.json:
-        Path(args.json).write_text(json.dumps(rows, ensure_ascii=False, indent=2),
-                                   encoding="utf-8")
+        Path(args.json).write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
 
     return 0
 
@@ -180,8 +207,7 @@ async def main_async(args) -> int:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--concurrency", type=int, default=5)
-    parser.add_argument("--delay", type=float, default=0.5,
-                        help="пауза после каждого запроса, секунды")
+    parser.add_argument("--delay", type=float, default=0.5, help="пауза после каждого запроса, секунды")
     parser.add_argument("--out", help="записать keep-каналы в YAML")
     parser.add_argument("--json", help="записать полный отчёт в JSON")
     args = parser.parse_args()

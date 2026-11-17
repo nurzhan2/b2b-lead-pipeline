@@ -70,7 +70,12 @@ def build(tmp_path, overpass, settings=None, progress=None, stoplist=None):
     settings = settings or make_settings(tmp_path)
     progress = progress if progress is not None else load_progress(settings.progress_file)
     return OsmRunner(
-        settings, CITIES, CATEGORIES, overpass, FakeCore(), progress,
+        settings,
+        CITIES,
+        CATEGORIES,
+        overpass,
+        FakeCore(),
+        progress,
         ChainFilter(stoplist if stoplist is not None else []),
     )
 
@@ -87,8 +92,10 @@ def test_grid_is_every_city_times_every_category(tmp_path):
     # City-major: one city's categories are crawled together, so a partial
     # run gives usable coverage of somewhere rather than a thin smear.
     assert [(c.name, k.name) for c, k in combos] == [
-        ("Москва", "Кафе"), ("Москва", "Аптеки"),
-        ("Казань", "Кафе"), ("Казань", "Аптеки"),
+        ("Москва", "Кафе"),
+        ("Москва", "Аптеки"),
+        ("Казань", "Кафе"),
+        ("Казань", "Аптеки"),
     ]
 
 
@@ -179,12 +186,14 @@ async def test_summary_names_the_pair_the_next_run_will_start_with(tmp_path):
 
 @pytest.mark.asyncio
 async def test_chain_branches_are_filtered_out(tmp_path):
-    overpass = FakeOverpass(default_elements=[
-        node(1, "Кафе Уют", phone="+7 495 111 11 11"),
-        node(2, "Пятёрочка"),
-        node(3, "Магнит у дома"),
-        node(4, "Пекарня Хлебница"),
-    ])
+    overpass = FakeOverpass(
+        default_elements=[
+            node(1, "Кафе Уют", phone="+7 495 111 11 11"),
+            node(2, "Пятёрочка"),
+            node(3, "Магнит у дома"),
+            node(4, "Пекарня Хлебница"),
+        ]
+    )
     settings = make_settings(tmp_path, combos_per_run=1)
     runner = build(tmp_path, overpass, settings=settings, stoplist=["Пятёрочка", "Магнит"])
 
@@ -209,11 +218,13 @@ async def test_an_independent_business_is_not_filtered_by_a_chain_prefix(tmp_pat
 
 @pytest.mark.asyncio
 async def test_elements_without_a_name_are_counted_and_skipped(tmp_path):
-    overpass = FakeOverpass(default_elements=[
-        node(1, "Кафе Уют"),
-        node(2, None),
-        node(3, None),
-    ])
+    overpass = FakeOverpass(
+        default_elements=[
+            node(1, "Кафе Уют"),
+            node(2, None),
+            node(3, None),
+        ]
+    )
     settings = make_settings(tmp_path, combos_per_run=1)
     runner = build(tmp_path, overpass, settings=settings)
 
@@ -225,12 +236,14 @@ async def test_elements_without_a_name_are_counted_and_skipped(tmp_path):
 
 @pytest.mark.asyncio
 async def test_statistics_count_phones_and_missing_sites(tmp_path):
-    overpass = FakeOverpass(default_elements=[
-        node(1, "Кафе Уют", phone="+7 495 111 11 11"),                       # phone, no site
-        node(2, "Пекарня", website="https://pekarnya.ru"),                   # site, no phone
-        node(3, "Стоматология", phone="+7 495 222 22 22", website="x.ru"),   # both
-        node(4, "Цветы"),                                                     # neither
-    ])
+    overpass = FakeOverpass(
+        default_elements=[
+            node(1, "Кафе Уют", phone="+7 495 111 11 11"),  # phone, no site
+            node(2, "Пекарня", website="https://pekarnya.ru"),  # site, no phone
+            node(3, "Стоматология", phone="+7 495 222 22 22", website="x.ru"),  # both
+            node(4, "Цветы"),  # neither
+        ]
+    )
     settings = make_settings(tmp_path, combos_per_run=1)
     runner = build(tmp_path, overpass, settings=settings)
 
@@ -245,10 +258,12 @@ async def test_statistics_count_phones_and_missing_sites(tmp_path):
 @pytest.mark.asyncio
 async def test_the_same_element_across_two_categories_is_deduped(tmp_path):
     shared = [node(1, "Кафе Уют")]
-    overpass = FakeOverpass(elements_by_key={
-        ("amenity", "cafe"): shared,
-        ("amenity", "pharmacy"): shared,
-    })
+    overpass = FakeOverpass(
+        elements_by_key={
+            ("amenity", "cafe"): shared,
+            ("amenity", "pharmacy"): shared,
+        }
+    )
     settings = make_settings(tmp_path, combos_per_run=2)
     runner = build(tmp_path, overpass, settings=settings)
 
@@ -280,8 +295,9 @@ async def test_leads_actually_reach_the_core(tmp_path):
     overpass = FakeOverpass(default_elements=[node(1, "Кафе Уют", phone="+7 495 111 11 11")])
     settings = make_settings(tmp_path, combos_per_run=1)
     core = FakeCore()
-    runner = OsmRunner(settings, CITIES, CATEGORIES, overpass, core,
-                       ProgressTracker(settings.progress_file), ChainFilter([]))
+    runner = OsmRunner(
+        settings, CITIES, CATEGORIES, overpass, core, ProgressTracker(settings.progress_file), ChainFilter([])
+    )
 
     await runner.run_once()
 

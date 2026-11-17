@@ -139,9 +139,7 @@ def test_vacancy_post_rejected(matcher: Matcher):
     # разработчика" - ambiguous out of context), but every other signal
     # ("в штат", "оклад", "график работы") says this is an in-house job,
     # and there is no order_signals keyword anywhere to say otherwise.
-    result = matcher.match(
-        "Ищу разработчика в штат, оклад от 150000, график работы 5/2, полная занятость."
-    )
+    result = matcher.match("Ищу разработчика в штат, оклад от 150000, график работы 5/2, полная занятость.")
 
     assert result.matched is False
     assert result.is_order is False
@@ -167,9 +165,7 @@ def test_mixed_hiring_and_order_signal_passes_order_wins(matcher: Matcher):
     # ("разовая задача") fire on the same post - order signals win the tie,
     # since a stray vacancy word is far less costly to a human reviewer
     # than a missed one-off order. See README "Баланс: лучше лишний лид".
-    result = matcher.match(
-        "Ищем на удаленку в штат добавить лендинг, это разовая задача, оклад не имеет значения."
-    )
+    result = matcher.match("Ищем на удаленку в штат добавить лендинг, это разовая задача, оклад не имеет значения.")
 
     assert result.matched is True
     assert result.is_order is True

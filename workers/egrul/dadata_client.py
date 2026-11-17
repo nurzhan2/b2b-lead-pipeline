@@ -50,8 +50,7 @@ class DadataQuotaExceeded(DadataUnavailable):
 
 
 class DadataClient:
-    def __init__(self, api_key: str, client: httpx.AsyncClient | None = None,
-                 timeout_seconds: float = 20.0):
+    def __init__(self, api_key: str, client: httpx.AsyncClient | None = None, timeout_seconds: float = 20.0):
         self._api_key = api_key
         self._timeout = timeout_seconds
         self._client = client or httpx.AsyncClient(timeout=timeout_seconds)
@@ -86,8 +85,7 @@ class DadataClient:
             "Authorization": f"Token {self._api_key}",
         }
         try:
-            response = await self._client.post(url, json=payload, headers=headers,
-                                               timeout=self._timeout)
+            response = await self._client.post(url, json=payload, headers=headers, timeout=self._timeout)
         except httpx.TransportError as exc:
             raise DadataUnavailable(f"transport error: {exc}") from exc
 

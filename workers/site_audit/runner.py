@@ -77,7 +77,8 @@ class AuditRunner:
                 return counters
 
             probe = await probe_site(
-                self._http, domain,
+                self._http,
+                domain,
                 timeout_seconds=self._settings.request_timeout_seconds,
                 slow_response_seconds=self._settings.slow_response_seconds,
                 heavy_page_bytes=self._settings.heavy_page_bytes,
@@ -134,8 +135,9 @@ class AuditRunner:
 
 def _with_note(probe: ProbeResult, extra: str) -> ProbeResult:
     note = f"{probe.note}; {extra}" if probe.note else extra
-    return ProbeResult(probe.reachable, probe.failed, probe.final_url,
-                       probe.elapsed_seconds, probe.page_bytes, note[:400])
+    return ProbeResult(
+        probe.reachable, probe.failed, probe.final_url, probe.elapsed_seconds, probe.page_bytes, note[:400]
+    )
 
 
 def _to_patch(probe: ProbeResult, pagespeed: int | None) -> AuditPatch:

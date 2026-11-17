@@ -46,20 +46,23 @@ async def _run() -> None:
         psi_max_per_run=settings.psi_max_per_run if psi_enabled else None,
     )
     if not psi_enabled:
-        log.warning("audit.psi_disabled",
-                    hint="PSI_API_KEY is empty: only the local probe runs, so auditFails is "
-                         "reported and pagespeed is not. PSI is free and needs no billing - "
-                         "see README.md 'PageSpeed Insights'.")
+        log.warning(
+            "audit.psi_disabled",
+            hint="PSI_API_KEY is empty: only the local probe runs, so auditFails is "
+            "reported and pagespeed is not. PSI is free and needs no billing - "
+            "see README.md 'PageSpeed Insights'.",
+        )
 
-    limits = httpx.Limits(max_connections=settings.audit_concurrency * 2,
-                          max_keepalive_connections=settings.audit_concurrency)
+    limits = httpx.Limits(
+        max_connections=settings.audit_concurrency * 2, max_keepalive_connections=settings.audit_concurrency
+    )
     core = CoreClient(settings.core_url)
     psi = PageSpeedClient(settings.psi_api_key, settings.psi_strategy, settings.psi_timeout_seconds)
     headers = {"User-Agent": settings.user_agent}
     try:
-        async with httpx.AsyncClient(limits=limits, headers=headers,
-                                     timeout=settings.request_timeout_seconds,
-                                     follow_redirects=True) as http_client:
+        async with httpx.AsyncClient(
+            limits=limits, headers=headers, timeout=settings.request_timeout_seconds, follow_redirects=True
+        ) as http_client:
             while True:
                 runner = AuditRunner(settings, core, psi, http_client)
                 summary = await runner.run_once()

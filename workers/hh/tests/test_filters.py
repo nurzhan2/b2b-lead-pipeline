@@ -39,13 +39,16 @@ def test_normalize_handles_none():
 # --- agencies and giants are filtered ------------------------------------
 
 
-@pytest.mark.parametrize("name", [
-    "Кадровое агентство Успех",
-    "КАДРОВОЕ АГЕНТСТВО",
-    "Рекрутинг Плюс",
-    "Подбор персонала для вас",
-    "ANCOR",
-])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Кадровое агентство Успех",
+        "КАДРОВОЕ АГЕНТСТВО",
+        "Рекрутинг Плюс",
+        "Подбор персонала для вас",
+        "ANCOR",
+    ],
+)
 def test_recruiting_agencies_are_filtered(employer_filter, name):
     reason = employer_filter.skip_reason(name=name)
 
@@ -64,16 +67,19 @@ def test_it_giants_are_filtered(employer_filter, name):
 # --- real prospects survive (the half that matters) ----------------------
 
 
-@pytest.mark.parametrize("name", [
-    "ООО Ромашка",
-    "Студия дизайна интерьера Уют",
-    "Кадрырезерв Дизайн",        # "кадры" is a PREFIX here, not a word
-    "Мебельная фабрика Дуб",
-    "Архитектурное бюро Форма",
-    "Ландшафт Плюс",
-    "Стоматология Улыбка",
-    "ВКонтакте Строй",           # contains "вк" only as part of a word
-])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "ООО Ромашка",
+        "Студия дизайна интерьера Уют",
+        "Кадрырезерв Дизайн",  # "кадры" is a PREFIX here, not a word
+        "Мебельная фабрика Дуб",
+        "Архитектурное бюро Форма",
+        "Ландшафт Плюс",
+        "Стоматология Улыбка",
+        "ВКонтакте Строй",  # contains "вк" only as part of a word
+    ],
+)
 def test_real_prospects_are_not_filtered(employer_filter, name):
     assert employer_filter.skip_reason(name=name) is None, f"over-filtered: {name}"
 
@@ -127,8 +133,7 @@ def test_ordinary_company_type_is_kept(employer_filter):
 def test_every_dictionary_type_is_classified_deliberately(employer_filter):
     """All six live employer_type values, so a new one can't sneak through
     unnoticed."""
-    skipped = {t for t in EMPLOYER_TYPES
-               if employer_filter.skip_reason(name="Нейтральное Имя", employer_type=t)}
+    skipped = {t for t in EMPLOYER_TYPES if employer_filter.skip_reason(name="Нейтральное Имя", employer_type=t)}
 
     assert skipped == {"agency", "private_recruiter"}
 
@@ -170,12 +175,18 @@ def test_shipped_lists_parse_and_have_no_dangerous_needles():
 
 def test_shipped_lists_catch_the_obvious_and_spare_the_rest():
     settings = Settings(hh_token="")
-    filt = EmployerFilter(settings.agencies, settings.giants,
-                          settings.skipped_employer_types, settings.skip_accredited_it)
+    filt = EmployerFilter(
+        settings.agencies, settings.giants, settings.skipped_employer_types, settings.skip_accredited_it
+    )
 
     for name in ["Сбербанк", "Яндекс", "Wildberries", "Кадровое агентство Профи", "EPAM"]:
         assert filt.skip_reason(name=name) is not None, f"missed: {name}"
 
-    for name in ["ООО Ромашка", "Дизайн-студия Интерьер", "Автосервис на Мира",
-                 "Пекарня Хлебница", "Архитектурная мастерская"]:
+    for name in [
+        "ООО Ромашка",
+        "Дизайн-студия Интерьер",
+        "Автосервис на Мира",
+        "Пекарня Хлебница",
+        "Архитектурная мастерская",
+    ]:
         assert filt.skip_reason(name=name) is None, f"over-filtered: {name}"

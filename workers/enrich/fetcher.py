@@ -62,14 +62,14 @@ class RobotsDisallowed(FetchError):
 
 @dataclass(frozen=True)
 class Page:
-    url: str           # final URL, after redirects
+    url: str  # final URL, after redirects
     status: int
     content_type: str
-    html: str | None   # None for errors and non-HTML responses
+    html: str | None  # None for errors and non-HTML responses
 
 
 def product_token(user_agent: str) -> str:
-    """"qorsa-leadgen-enrich/1.0 (...)" -> "qorsa-leadgen-enrich": the name a
+    """ "qorsa-leadgen-enrich/1.0 (...)" -> "qorsa-leadgen-enrich": the name a
     robots.txt `User-agent:` line would use to address this bot."""
     token = (user_agent or "").strip().split(" ", 1)[0].split("/", 1)[0]
     return token.lower() or "*"
@@ -130,8 +130,10 @@ class PoliteFetcher:
 
             await self._pace(origin, rules.crawl_delay)
             status, headers, body = await self._get(
-                current, max_bytes=self._max_page_bytes,
-                want_body=lambda code, ctype: 200 <= code < 300 and _is_html(ctype))
+                current,
+                max_bytes=self._max_page_bytes,
+                want_body=lambda code, ctype: 200 <= code < 300 and _is_html(ctype),
+            )
 
             location = headers.get("location")
             if status in REDIRECT_STATUSES and location:
@@ -154,8 +156,13 @@ class PoliteFetcher:
             return cached
         rules = await self._fetch_robots(origin)
         self._robots[origin] = rules
-        log.debug("enrich.robots", origin=origin, disallows=len(rules.disallows),
-                  crawl_delay=rules.crawl_delay, detail=rules.detail or None)
+        log.debug(
+            "enrich.robots",
+            origin=origin,
+            disallows=len(rules.disallows),
+            crawl_delay=rules.crawl_delay,
+            detail=rules.detail or None,
+        )
         return rules
 
     async def _fetch_robots(self, origin: str) -> RobotsRules:
@@ -169,7 +176,8 @@ class PoliteFetcher:
             # A transport error propagates as SiteUnavailable: a site whose
             # robots.txt we cannot even connect to is a site we cannot reach.
             status, headers, body = await self._get(
-                url, max_bytes=MAX_ROBOTS_BYTES, want_body=lambda code, _ctype: 200 <= code < 300)
+                url, max_bytes=MAX_ROBOTS_BYTES, want_body=lambda code, _ctype: 200 <= code < 300
+            )
             location = headers.get("location")
             if status in REDIRECT_STATUSES and location:
                 url = urljoin(url, location)
@@ -196,11 +204,13 @@ class PoliteFetcher:
                 await self._sleep(wait)
         self._last_hit[origin] = self._clock()
 
-    async def _get(self, url: str, *, max_bytes: int,
-                   want_body: Callable[[int, str], bool]) -> tuple[int, httpx.Headers, bytes]:
+    async def _get(
+        self, url: str, *, max_bytes: int, want_body: Callable[[int, str], bool]
+    ) -> tuple[int, httpx.Headers, bytes]:
         try:
-            async with self._client.stream("GET", url, headers=self._headers, follow_redirects=False,
-                                           timeout=self._timeout) as response:
+            async with self._client.stream(
+                "GET", url, headers=self._headers, follow_redirects=False, timeout=self._timeout
+            ) as response:
                 self.requests_made += 1
                 body = b""
                 if want_body(response.status_code, response.headers.get("content-type", "")):

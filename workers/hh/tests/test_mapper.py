@@ -61,8 +61,9 @@ def test_salary_range_field_is_also_accepted():
 
 
 def test_maps_a_real_hh_vacancy_to_a_lead():
-    lead = map_employer_to_lead(bucket_for(VACANCY_ITEM, age=120, stale=True, salary=True),
-                                stale_days=45, employer_details=EMPLOYER_DETAIL)
+    lead = map_employer_to_lead(
+        bucket_for(VACANCY_ITEM, age=120, stale=True, salary=True), stale_days=45, employer_details=EMPLOYER_DETAIL
+    )
 
     assert lead is not None
     assert lead.name == "HeadHunter"
@@ -74,9 +75,9 @@ def test_maps_a_real_hh_vacancy_to_a_lead():
 
 
 def test_raw_carries_the_stale_detector_fields():
-    lead = map_employer_to_lead(bucket_for(vacancy(published_at="2026-01-01T00:00:00+0300"),
-                                           age=200, stale=True),
-                                stale_days=45)
+    lead = map_employer_to_lead(
+        bucket_for(vacancy(published_at="2026-01-01T00:00:00+0300"), age=200, stale=True), stale_days=45
+    )
 
     assert lead.raw["age_days"] == 200
     assert lead.raw["is_stale"] is True
@@ -90,8 +91,8 @@ def test_raw_carries_the_stale_detector_fields():
 def test_salary_sets_budget_mentioned_for_the_core_scorer():
     """The core's ScoringService reads raw.budgetMentioned directly (+20)."""
     with_salary = map_employer_to_lead(
-        bucket_for(vacancy(salary={"from": 120000, "to": None, "currency": "RUR"}), salary=True),
-        stale_days=45)
+        bucket_for(vacancy(salary={"from": 120000, "to": None, "currency": "RUR"}), salary=True), stale_days=45
+    )
     without = map_employer_to_lead(bucket_for(vacancy(salary=None), salary=False), stale_days=45)
 
     assert with_salary.raw["budgetMentioned"] is True
@@ -117,8 +118,7 @@ def test_employer_detail_name_wins_over_the_search_result_name():
     """The employer endpoint carries the canonical legal name."""
     details = dict(EMPLOYER_DETAIL, name='ООО "Ромашка Групп"')
 
-    lead = map_employer_to_lead(bucket_for(vacancy(employer_name="Ромашка")),
-                                stale_days=45, employer_details=details)
+    lead = map_employer_to_lead(bucket_for(vacancy(employer_name="Ромашка")), stale_days=45, employer_details=details)
 
     assert lead.name == 'ООО "Ромашка Групп"'
 
@@ -132,10 +132,8 @@ def test_a_nameless_employer_produces_no_lead():
 
 def test_multiple_vacancies_are_reported_in_raw():
     agg = EmployerAggregator()
-    agg.add(vacancy(vacancy_id="1", employer_id="100"), age=10, stale=False,
-            has_salary=False, keyword="веб-дизайнер")
-    agg.add(vacancy(vacancy_id="2", employer_id="100"), age=90, stale=True,
-            has_salary=True, keyword="таргетолог")
+    agg.add(vacancy(vacancy_id="1", employer_id="100"), age=10, stale=False, has_salary=False, keyword="веб-дизайнер")
+    agg.add(vacancy(vacancy_id="2", employer_id="100"), age=90, stale=True, has_salary=True, keyword="таргетолог")
 
     lead = map_employer_to_lead(agg.buckets()[0], stale_days=45)
 
@@ -157,8 +155,7 @@ def test_employer_type_and_accreditation_ride_along_in_raw():
 
 
 def test_lead_serializes_with_the_cores_camelcase_contract():
-    lead = map_employer_to_lead(bucket_for(VACANCY_ITEM, salary=True),
-                                stale_days=45, employer_details=EMPLOYER_DETAIL)
+    lead = map_employer_to_lead(bucket_for(VACANCY_ITEM, salary=True), stale_days=45, employer_details=EMPLOYER_DETAIL)
     payload = lead.model_dump(by_alias=True, exclude_none=True)
 
     assert payload["sourceUrl"] == "https://hh.ru/vacancy/7760476"

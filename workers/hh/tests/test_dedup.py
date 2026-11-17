@@ -79,7 +79,7 @@ def test_the_stalest_vacancy_wins_as_representative():
 def test_stalest_wins_regardless_of_insertion_order():
     for order in ([120, 3], [3, 120]):
         agg = EmployerAggregator()
-        for i, age in enumerate(order):
+        for age in order:
             add(agg, vacancy(vacancy_id=f"v{age}", employer_id="100"), age=age)
         assert agg.buckets()[0].best_age == 120
 

@@ -67,13 +67,13 @@ def disallow_all(detail: str) -> RobotsRules:
 def rules_for_status(status: int, body: bytes, product_token: str) -> RobotsRules:
     """What a /robots.txt response means, by status (after redirects):
 
-      2xx          -> parse it.
-      404, 410,
-      other 4xx    -> "unavailable": no rules, everything allowed (RFC 9309 2.3.1.3).
-      401/403/429  -> treated as "keep out". The RFC would allow these like any
-                      4xx; we are stricter on purpose - a site that refuses to
-                      show a bot its robots.txt will not welcome the bot either.
-      5xx, other   -> "unreachable": assume complete disallow (RFC 9309 2.3.1.4).
+    2xx          -> parse it.
+    404, 410,
+    other 4xx    -> "unavailable": no rules, everything allowed (RFC 9309 2.3.1.3).
+    401/403/429  -> treated as "keep out". The RFC would allow these like any
+                    4xx; we are stricter on purpose - a site that refuses to
+                    show a bot its robots.txt will not welcome the bot either.
+    5xx, other   -> "unreachable": assume complete disallow (RFC 9309 2.3.1.4).
     """
     if 200 <= status < 300:
         return parse_robots(body[:MAX_ROBOTS_BYTES].decode("utf-8", errors="replace"), product_token)
@@ -140,7 +140,7 @@ def parse_robots(text: str, product_token: str) -> RobotsRules:
 
 
 def _agent_token(value: str) -> str:
-    """"Qorsa-Leadgen-Enrich/1.0 (...)" -> "qorsa-leadgen-enrich"; "*" -> "*"."""
+    """ "Qorsa-Leadgen-Enrich/1.0 (...)" -> "qorsa-leadgen-enrich"; "*" -> "*"."""
     return re.split(r"[/\s]", value.strip().lower(), maxsplit=1)[0]
 
 

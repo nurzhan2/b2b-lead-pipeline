@@ -85,8 +85,9 @@ async def test_pagination_follows_next_page_token():
 
     transport = httpx.MockTransport(handler)
     async with httpx.AsyncClient(transport=transport) as http_client:
-        client = GooglePlacesClient("fake-key", http_client, request_delay_seconds=0, page_token_delay_seconds=0,
-                                     max_pages_per_query=5)
+        client = GooglePlacesClient(
+            "fake-key", http_client, request_delay_seconds=0, page_token_delay_seconds=0, max_pages_per_query=5
+        )
         places = [p async for p in client.iter_places("кафе Москва")]
 
     assert requests_seen == [None, "page2"]
@@ -103,8 +104,9 @@ async def test_pagination_capped_by_max_pages_per_query():
 
     transport = httpx.MockTransport(handler)
     async with httpx.AsyncClient(transport=transport) as http_client:
-        client = GooglePlacesClient("fake-key", http_client, request_delay_seconds=0, page_token_delay_seconds=0,
-                                     max_pages_per_query=2)
+        client = GooglePlacesClient(
+            "fake-key", http_client, request_delay_seconds=0, page_token_delay_seconds=0, max_pages_per_query=2
+        )
         places = [p async for p in client.iter_places("кафе Москва")]
 
     assert call_count["n"] == 2
@@ -140,8 +142,13 @@ async def test_does_not_retry_on_billing_disabled_error():
         attempts["n"] += 1
         return httpx.Response(
             403,
-            json={"error": {"code": 403, "message": "This API method requires billing to be enabled.",
-                             "status": "PERMISSION_DENIED"}},
+            json={
+                "error": {
+                    "code": 403,
+                    "message": "This API method requires billing to be enabled.",
+                    "status": "PERMISSION_DENIED",
+                }
+            },
         )
 
     transport = httpx.MockTransport(handler)

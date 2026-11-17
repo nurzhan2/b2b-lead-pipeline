@@ -46,12 +46,15 @@ async def _run() -> None:
         user_agent=settings.user_agent,
     )
     if not settings.respect_robots:
-        log.warning("enrich.robots_disabled",
-                    hint="RESPECT_ROBOTS=false: robots.txt is NOT being checked. Only acceptable "
-                         "against sites you own - see README.md 'robots.txt'.")
+        log.warning(
+            "enrich.robots_disabled",
+            hint="RESPECT_ROBOTS=false: robots.txt is NOT being checked. Only acceptable "
+            "against sites you own - see README.md 'robots.txt'.",
+        )
 
-    limits = httpx.Limits(max_connections=settings.enrich_concurrency * 2,
-                          max_keepalive_connections=settings.enrich_concurrency)
+    limits = httpx.Limits(
+        max_connections=settings.enrich_concurrency * 2, max_keepalive_connections=settings.enrich_concurrency
+    )
     core = CoreClient(settings.core_url)
     try:
         async with httpx.AsyncClient(limits=limits, timeout=settings.request_timeout_seconds) as http_client:
