@@ -1,7 +1,10 @@
+# --- Build output ---
 target/
 *.class
+dist/
+build/
 
-# IDE
+# --- IDE / OS ---
 .idea/
 *.iws
 *.iml
@@ -12,58 +15,50 @@ target/
 .project
 .factorypath
 bin/
-
-# OS
+.claude/
 .DS_Store
 Thumbs.db
+__MACOSX/
 
-# Env
-.env
-workers/**/.env
-
-# Logs
-*.log
-
-# Python workers
+# --- Python ---
 __pycache__/
 *.pyc
 .venv/
 venv/
 *.egg-info/
 .pytest_cache/
+.ruff_cache/
 
-# Telethon session files - equivalent to a logged-in credential, never commit
+# --- Secrets: never commit ---
+.env
+workers/**/.env
+credentials/
+# Telethon session = a logged-in Telegram account
 *.session
 *.session-journal
 
-# Google service-account credentials (Sheets export) - never commit
-credentials/*.json
+# --- Logs, local data, archives ---
+logs/
+*.log
+*.db
+*.sqlite3
+*.zip
+*.rar
+*.bak
 
-# Generated report, not source (workers/telegram_monitor/channel_rater.py)
-workers/telegram_monitor/channel_report.csv
+# --- Local working notes (not part of the project) ---
+HANDOFF.md
+DECISIONS.md
 
-# Resolved-channel cache - machine-local state (peer ids/access hashes tied to
-# one account's session), rebuilt on demand. Never commit.
+# --- Machine-local worker state, rebuilt on demand ---
 workers/telegram_monitor/channel_cache.json
 workers/telegram_monitor/channel_cache.json.tmp
-
-# OSM crawl checkpoint - per-machine run state (which city/category pairs are
-# done), not source. Deleting it just restarts the sweep.
+workers/telegram_monitor/channel_report.csv
+workers/telegram_monitor/channels_report.json
+workers/telegram_monitor/channels_verified.yml
 workers/osm/osm_progress.json
 workers/osm/osm_progress.json.tmp
 
-# Instagram CTA worker state/output and authenticated private-API session.
-workers/instagram_cta/ig_session.json
-workers/instagram_cta/seen_leads.json
-workers/instagram_cta/instagram_leads.csv
-workers/instagram_cta/instagram_leads.csv.tmp
-
-# hh_apply - the apply agent runs under the owner's personal hh account.
-# session/ is the live Chromium profile (cookies) + the recorded login signal;
-# evidence/ and screenshots/ show pages opened under that account; the journal
-# lists which jobs the owner applied to; cover_letter.md is their own text.
-workers/hh_apply/session/
-workers/hh_apply/evidence/
-workers/hh_apply/screenshots/
-workers/hh_apply/*.sqlite3
-workers/hh_apply/cover_letter.md
+# --- Personal agents kept on branch side/personal-agents: session state ---
+workers/hh_apply/
+workers/instagram_cta/
