@@ -128,6 +128,21 @@ docker-compose.yml                local PostgreSQL
 
 Workers: `osm`, `zakupki`, `telegram_monitor`, `twogis`, `google_places`, `hh`, `newdomains` (sources); `enrich`, `site_audit`, `egrul` (enrichment); `amocrm` (export).
 
+## Results
+
+Local pilot, 14–17 September 2026, summed from the workers' `run_finished` log records (duplicates by timestamp removed):
+
+| Worker | Runs | Result |
+|---|---|---|
+| OpenStreetMap | 8 | 2,400 companies sent to the core; 1,067 with a phone, 1,106 without a website (110 of 2,010 city × category pairs covered) |
+| Government tenders | 7 | 2,100 notices parsed with their cards; 537 dropped as duplicates |
+| Contact enrichment | 8 | 596 websites processed, contacts found for 377 (63%), 749 pages fetched within robots.txt |
+| Site audit | 7 | 716 websites: 537 measured, 179 unreachable, 1,030 failed checks |
+| Company registry (EGRUL) | 6 | 1,429 companies; director found for 355 (25%) |
+
+- **Tests:** 820 in CI — 91 JUnit with Testcontainers on PostgreSQL, 729 pytest. Python line coverage 56.5% (enrichment 91%, hh 83%, OSM 79%; site audit has no tests yet).
+- **Not reached:** no deals were created in amoCRM — the CRM token returned 401 on every run, so the pilot stopped at the Google Sheets stage (11,428 rows synced across 9 tabs).
+
 ## Limitations & roadmap
 
 - **Not every source is usable without paid access.** 2GIS demo keys return no contacts, Google Places needs an activated billing account, hh.ru requires an approved OAuth application, and the new-domains feed is paid and has not been run against a live key.
