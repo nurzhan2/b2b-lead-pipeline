@@ -63,6 +63,26 @@ public interface CompanyRepository extends JpaRepository<Company, UUID> {
     List<Company> findPendingAudit(@Param("limit") int limit);
 
     /**
+     * Companies worth an ЕГРЮЛ lookup (workers/egrul): no CEO known yet and
+     * no lookup attempted. Deliberately not restricted to companies with a
+     * domain - unlike enrichment and the site audit, this needs only a name
+     * and a city, so the OSM leads with nothing but a switchboard number
+     * (exactly the ones a name would help most) are in scope.
+     *
+     * <p>Ordered hottest first, so a capped daily quota is spent on the leads
+     * most likely to be called.
+     */
+    @Query(value = """
+            select c.* from companies c
+            where coalesce(c.raw ->> 'egrul_attempted', 'false') <> 'true'
+              and c.raw ->> 'ceo_name' is null
+            order by (select max(l.score) from leads l where l.company_id = c.id) desc nulls last,
+                     c.created_at asc
+            limit :limit
+            """, nativeQuery = true)
+    List<Company> findPendingEgrul(@Param("limit") int limit);
+
+    /**
      * Deletes every company from the given source. Dependent leads (and their
      * outreach rows) must be gone first - see
      * {@link LeadRepository#deleteByCompanySource}.
