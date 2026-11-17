@@ -52,6 +52,12 @@ workers/telegram_monitor/channel_cache.json.tmp
 workers/osm/osm_progress.json
 workers/osm/osm_progress.json.tmp
 
+# Instagram CTA worker state/output and authenticated private-API session.
+workers/instagram_cta/ig_session.json
+workers/instagram_cta/seen_leads.json
+workers/instagram_cta/instagram_leads.csv
+workers/instagram_cta/instagram_leads.csv.tmp
+
 # hh_apply - the apply agent runs under the owner's personal hh account.
 # session/ is the live Chromium profile (cookies) + the recorded login signal;
 # evidence/ and screenshots/ show pages opened under that account; the journal
